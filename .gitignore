@@ -1,2 +1,7 @@
 # Project exclude paths
-/cmake-build-debug/CMakeFiles/
+cmake-build-debug/
+.idea/
+venv/
+*build/
+*.pb.h
+*.pb.cc

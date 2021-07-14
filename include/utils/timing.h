@@ -14,7 +14,7 @@
 #define PROF_END(name)
 #define PROF_SUMMARY
 #endif
-namespace RFIT::utils {
+namespace RFIT_NS::utils {
 
     TimePoint startTimer();
 

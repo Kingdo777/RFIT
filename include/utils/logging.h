@@ -2,8 +2,8 @@
 
 #include <spdlog/spdlog.h>
 
-#define default_logger RFIT::utils::getLogger()
+#define default_logger RFIT_NS::utils::getLogger()
 
-namespace RFIT::utils {
+namespace RFIT_NS::utils {
     std::shared_ptr<spdlog::logger> &getLogger(const std::string &name = "default");
 }

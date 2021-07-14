@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package RFIT_NS;
+
+message Message {
+  int32 id = 1;
+
+  int32 funcPtr = 2;
+
+  uint64 timestamp = 3;
+  uint64 finishTimestamp = 4;
+
+  bytes inputData = 5;
+  bytes outputData = 6;
+}
+
+message FunctionRegisterMsg{
+  string funcName = 1;
+
+  uint32 memSize = 2;
+  double coreRation = 3;
+  uint32 concurrency = 4;
+
+  bytes dlData = 5;
+}
+
+message FunctionRegisterResponseMsg{
+
+  bool status = 1;
+
+  string funcName = 2;
+
+  uint32 memSize = 3;
+  double coreRation = 4;
+  uint32 concurrency = 5;
+
+  string message = 6;
+}

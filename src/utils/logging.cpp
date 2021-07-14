@@ -3,7 +3,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <utils/config.h>
 
-namespace RFIT::utils {
+namespace RFIT_NS::utils {
 
     static std::unordered_map<std::string, std::shared_ptr<spdlog::logger>> loggers;
 

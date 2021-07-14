@@ -2,47 +2,38 @@
 
 #include <utils/exception.h>
 #include <utils/locks.h>
+#include <pistache/mailbox.h>
 #include <queue>
 
 using namespace std;
-using namespace RFIT::utils;
+using namespace RFIT_NS::utils;
 
 template<typename T>
-class Queue {
+class IQueue : public Pistache::PollableQueue<T> {
 public:
-    void enqueue(T value) {
+
+    using Base = Pistache::PollableQueue<T>;
+    typedef typename Pistache::Queue<T>::Entry Entry;
+
+    template<class U>
+    void push(U &&u)  {
         UniqueLock lock(mx);
-        mq.emplace(std::move(value));
+        Base::push(u);
+        count++;
     }
 
-    T tryDequeue(T tryValue) {
+    Entry *pop() override {
         UniqueLock lock(mx);
-        if (mq.empty())
-            return tryValue;
-        T value = std::move(mq.front());
-        mq.pop();
-        return value;
+        Base::pop();
+        count--;
     }
 
-    void drain() {
+    size_t size() {
         UniqueLock lock(mx);
-        while (!mq.empty()) {
-            mq.pop();
-        }
-    }
-
-    long size() {
-        UniqueLock lock(mx);
-        return mq.size();
-    }
-
-    void reset() {
-        UniqueLock lock(mx);
-        std::queue<T> empty;
-        std::swap(mq, empty);
+        return count;
     }
 
 private:
-    std::queue<T> mq;
-    UniqueLock mx{};
+    std::mutex mx{};
+    size_t count = 0;
 };

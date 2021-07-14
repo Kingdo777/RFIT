@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 project(RFIT CXX)
 
-# 是否静态编译
-option(RFIT_STATIC_LIBS "Statically link RFIT libs" ON)
 # 是否统计时间
 option(OPEN_TRACE "If Open Time Trace" ON)
 
@@ -16,23 +14,15 @@ set(RFIT_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
 set(RFIT_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
 
-# Library type (for shared libraries)
-if (RFIT_STATIC_LIBS)
-    function(rfit_public_lib lib_name lib_deps)
-        add_library(${lib_name} STATIC ${lib_deps})
-    endfunction()
-    function(rfit_private_lib lib_name lib_deps)
-        add_library(${lib_name} STATIC ${lib_deps})
-    endfunction()
-else ()
-    function(rfit_public_lib lib_name lib_deps)
-        add_library(${lib_name} SHARED ${lib_deps})
-    endfunction()
-    function(rfit_private_lib lib_name lib_deps)
-        add_library(${lib_name} STATIC ${lib_deps})
-        target_compile_options(${lib_name} PRIVATE "-fPIC")
-    endfunction()
-endif ()
+
+function(rfit_private_lib lib_name lib_deps)
+    add_library(${lib_name} STATIC ${lib_deps})
+endfunction()
+
+function(rfit_public_lib lib_name lib_deps)
+    add_library(${lib_name} SHARED ${lib_deps})
+endfunction()
+
 
 if (OPEN_TRACE)
     add_definitions(-DOPEN_TRACE)
@@ -46,6 +36,9 @@ include_directories(
 )
 
 add_subdirectory(src/utils)
+add_subdirectory(src/endpoint)
+add_subdirectory(src/RFIT)
+add_subdirectory(src/proto)
 
-add_executable(RFIT src/main.cpp)
-target_link_libraries(RFIT utils)
+add_executable(main src/main.cpp)
+target_link_libraries(main utils endpoint RFIT)

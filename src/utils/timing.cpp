@@ -3,8 +3,8 @@
 #include <string>
 
 using namespace std;
-using namespace RFIT::utils;
-namespace RFIT::utils {
+using namespace RFIT_NS::utils;
+namespace RFIT_NS::utils {
     std::unordered_map<std::string, std::atomic<long>> timerTotals;
     std::unordered_map<std::string, std::atomic<int>> timerCounts;
 

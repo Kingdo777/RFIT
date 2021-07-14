@@ -12,8 +12,8 @@
 
 //这就意味着unique_lock可以和互斥锁与读写锁组合，但是shared_lock只能和读写锁组合
 
-namespace RFIT::utils {
+namespace RFIT_NS::utils {
     typedef std::unique_lock<std::mutex> UniqueLock;
-    typedef std::unique_lock<std::shared_mutex> FullLock;
-    typedef std::shared_lock<std::shared_mutex> SharedLock;
+    typedef std::unique_lock<std::shared_mutex> WriteLock;
+    typedef std::shared_lock<std::shared_mutex> ReadLock;
 }

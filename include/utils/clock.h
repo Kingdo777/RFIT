@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-namespace RFIT::utils {
+namespace RFIT_NS::utils {
     typedef std::chrono::steady_clock::time_point TimePoint;
 
     class Clock {

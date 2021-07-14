@@ -2,12 +2,14 @@
 
 #include <string>
 
-namespace RFIT::utils {
-std::string getEnvVar(const std::string& key, const std::string& deflt);
+namespace RFIT_NS::utils {
+    std::string getEnvVar(const std::string &key, const std::string &deflt);
 
-std::string setEnvVar(const std::string& varName, const std::string& value);
+    std::string setEnvVar(const std::string &varName, const std::string &value);
 
-void unsetEnvVar(const std::string& varName);
+    void unsetEnvVar(const std::string &varName);
 
-unsigned int getUsableCores();
+    unsigned int getUsableCores();
+
+    double getAllCores();
 }

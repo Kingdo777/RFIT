@@ -3,7 +3,7 @@
 #include <exception>
 #include <string>
 
-namespace RFIT::utils {
+namespace RFIT_NS::utils {
 class RFITException : public std::exception
 {
   public:
