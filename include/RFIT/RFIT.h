@@ -35,7 +35,6 @@ namespace RFIT_NS {
 
         RFIT &operator=(RFIT &&) = delete;
 
-
         void shutdown();
 
         Pistache::Async::Promise<FunctionRegisterResponseMsg> handlerNewFuncRegister(FunctionRegisterMsg &&msg_);
@@ -75,7 +74,16 @@ namespace RFIT_NS {
 
         shared_ptr<R> createR(Resource r);
 
+        pair<bool, string> registerF(FunctionRegisterResponseMsg &msg, dlResult &dl, const boost::filesystem::path &p);
+
         void handlerFuncRegisterQueue();
+
+        shared_ptr<F> getF(const string &funcName) {
+            auto it = FMap.find(funcName);
+            if (it == FMap.end())
+                return nullptr;
+            return it->second;
+        }
     };
 
     RFIT &getRFIT();

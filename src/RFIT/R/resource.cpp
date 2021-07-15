@@ -18,7 +18,7 @@ namespace RFIT_NS {
         hash = WAVM::Hash<uint64_t>()(mem_soft_limit, mem_hard_limit);
     }
 
-    Resource::Impl::Impl(CpuResource cpu, MemResource mem) : cpu(std::move(cpu)), mem(std::move(mem)) {
+    Resource::Impl::Impl(const CpuResource &cpu, const MemResource &mem) : cpu(cpu), mem(mem) {
         hash = WAVM::Hash<uint64_t>()(cpu.getHash(), mem.getHash());
     }
 }

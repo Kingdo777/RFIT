@@ -19,7 +19,7 @@ message Message {
 message FunctionRegisterMsg{
   string funcName = 1;
 
-  uint32 memSize = 2;
+  uint64 memSize = 2;
   double coreRation = 3;
   uint32 concurrency = 4;
 
@@ -32,7 +32,7 @@ message FunctionRegisterResponseMsg{
 
   string funcName = 2;
 
-  uint32 memSize = 3;
+  uint64 memSize = 3;
   double coreRation = 4;
   uint32 concurrency = 5;
 

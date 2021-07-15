@@ -22,12 +22,35 @@ namespace RFIT_NS {
 
         explicit F(const string &funcName_,
                    shared_ptr<R> r_,
-                   utils::dlResult dr_, uint
-                   concurrency = 1) :
+                   utils::dlResult dr_,
+                   boost::filesystem::path p,
+                   uint32_t concurrency = 1) :
                 funcName(funcName_),
                 dr(dr_),
+                dlPath(std::move(p)),
                 r(std::move(r_)),
-                concurrency(concurrency) {};
+                concurrency(concurrency) {
+        };
+
+        [[nodiscard]] const string &getFuncName() const {
+            return funcName;
+        }
+
+        [[nodiscard]] const dlResult &getDr() const {
+            return dr;
+        }
+
+        [[nodiscard]] const shared_ptr<R> &getR() const {
+            return r;
+        }
+
+        [[nodiscard]] uint32_t getConcurrency() const {
+            return concurrency;
+        }
+
+        [[nodiscard]] bool isConcurrency() const {
+            return concurrency > 1;
+        }
 
     private:
 
@@ -35,9 +58,12 @@ namespace RFIT_NS {
 
         utils::dlResult dr;
 
+        boost::filesystem::path dlPath;
+
         shared_ptr<R> r;
 
-        uint concurrency = 1;
+        uint32_t concurrency = 1;
+
 
     };
 }

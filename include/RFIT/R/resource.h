@@ -100,8 +100,8 @@ namespace RFIT_NS {
         Resource() :
                 impl(Impl()) {};
 
-        Resource(CpuResource cpu,
-                 MemResource mem) :
+        Resource(const CpuResource &cpu,
+                 const MemResource &mem) :
                 impl(Impl(cpu, mem)) {};
 
         [[nodiscard]] uint64_t getHash() const { return impl.hash; }
@@ -117,7 +117,7 @@ namespace RFIT_NS {
             MemResource mem;
 
             // 就一个构造函数,而且此构造函数，仅仅在getUniqueImpl中被调用，这样的话，所有的Impl就会保证是唯一的
-            explicit Impl(CpuResource cpu = CpuResource(), MemResource mem = MemResource());
+            explicit Impl(const CpuResource &cpu = CpuResource(), const MemResource &mem = MemResource());
         };
 
         const Impl impl;

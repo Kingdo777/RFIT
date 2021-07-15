@@ -4,5 +4,6 @@ cmake-build-debug/
 venv/
 *build/
 test/
+*.so
 *.pb.h
 *.pb.cc

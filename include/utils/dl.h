@@ -18,6 +18,8 @@ namespace RFIT_NS::utils {
         void *addr;
     };
 
+    void close_remove_DL(const boost::filesystem::path &p, void *handle = nullptr);
+
     std::pair<dlResult, std::string> getFuncEntry(const std::string &path, const std::string &symbolName);
 
     std::string makeDL(const std::string &dlName, char const *data, size_t dataSize);

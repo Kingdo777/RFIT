@@ -6,6 +6,12 @@
 
 namespace RFIT_NS::utils {
 
+    void close_remove_DL(const boost::filesystem::path &p, void *handle) {
+        if (handle)
+            dlclose(handle);
+        boost::filesystem::remove(p);
+    }
+
     std::string makeDL(const std::string &dlName, const char *data, size_t dataSize) {
         boost::filesystem::path funPath(FUNC_PATH);
         funPath.append(dlName);
@@ -28,7 +34,7 @@ namespace RFIT_NS::utils {
                 res.second = error;
             else
                 res.second = "handle is null，but unknown the reason";
-            boost::filesystem::remove(path);
+            close_remove_DL(path);
             return res;
         }
         dlerror();    /* Clear any existing error */
@@ -37,10 +43,11 @@ namespace RFIT_NS::utils {
             error = dlerror();
             if (error)
                 res.second = error;
-            dlclose(res.first.handle);
-            boost::filesystem::remove(path);
+            close_remove_DL(path, res.first.handle);
             return res;
         }
+        if (!res.second.empty())
+            close_remove_DL(path, res.first.handle);
         return res;
     }
 

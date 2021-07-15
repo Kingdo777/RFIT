@@ -59,6 +59,30 @@ namespace RFIT_NS {
         return RMap[res.getHash()];
     }
 
+    bool pingFunc(FuncType func) {
+        Message m{};
+        m.set_isping(true);
+        func(m);
+        return m.outputdata() == "PONG";
+    }
+
+    pair<bool, string>
+    RFIT::registerF(FunctionRegisterResponseMsg &msg, dlResult &dl, const boost::filesystem::path &p) {
+        if (!pingFunc((FuncType) dl.addr)) {
+            close_remove_DL(p, dl.handle);
+            return pair<bool, string>(false, "Ping Failed");
+        }
+        CpuResource cr(CPU_DEFAULT_SHARES,
+                       (uint64_t) (msg.coreration() * CPU_DEFAULT_CFS_PERIOD_US),
+                       CPU_DEFAULT_CFS_PERIOD_US);
+        MemResource mr(msg.memsize(), msg.memsize());
+        Resource resource(cr, mr);
+        auto r = createR(resource);
+        auto f = make_shared<F>(msg.funcname(), r, dl, p, msg.concurrency());
+        FMap.emplace(f->getFuncName(), f);
+        return pair<bool, string>(true, "OK");
+    }
+
     void
     makeResponseMsgFromRequest(const FunctionRegisterMsg &msg,
                                FunctionRegisterResponseMsg &responseMsg,
@@ -71,6 +95,7 @@ namespace RFIT_NS {
         responseMsg.set_status(status);
         responseMsg.set_message(message);
     }
+
 
     void RFIT::handlerFuncRegisterQueue() {
         for (;;) {
@@ -85,25 +110,12 @@ namespace RFIT_NS {
                 pair<dlResult, std::string> res = utils::getFuncEntry(dlPath,
                                                                       func->msg.funcname() + config.entrySuffix);
                 if (res.first.handle == nullptr || res.first.addr == nullptr || !res.second.empty()) {
-                    if (res.second.empty())
-                        makeResponseMsgFromRequest(func->msg, msg, false,
-                                                   func->msg.funcname() + "_main" + "is NULL type");
-                    else
-                        makeResponseMsgFromRequest(func->msg, msg, false, res.second);
-                    dlclose(res.first.handle);
-                    boost::filesystem::remove(dlPath);
+                    const string &message = res.second.empty() ? (func->msg.funcname() + "_main" + "is NULL type")
+                                                               : res.second;
+                    makeResponseMsgFromRequest(func->msg, msg, false, message);
                 } else {
-                    auto function = (FuncType) res.first.addr;
-                    Message m{};
-                    m.set_isping(true);
-                    function(m);
-                    if (m.outputdata() == "PONG")
-                        makeResponseMsgFromRequest(func->msg, msg, true, "OK");
-                    else {
-                        makeResponseMsgFromRequest(func->msg, msg, false, "Ping Failed");
-                        dlclose(res.first.handle);
-                        boost::filesystem::remove(dlPath);
-                    }
+                    auto info = registerF(msg, res.first, dlPath);
+                    makeResponseMsgFromRequest(func->msg, msg, info.first, info.second);
                 }
                 func->deferred.resolve(std::move(msg));
             } catch (exception &e) {
@@ -129,4 +141,5 @@ namespace RFIT_NS {
         static RFIT rfit;
         return rfit;
     }
+
 }
