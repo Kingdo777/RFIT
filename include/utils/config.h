@@ -21,6 +21,8 @@ namespace RFIT_NS::utils {
 
         uint32_t memAllocGranularity = 16;
 
+        std::string entrySuffix = "_mainEntry";
+
         SystemConfig();
 
         void print() const;

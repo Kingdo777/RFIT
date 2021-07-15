@@ -27,9 +27,11 @@ namespace RFIT_NS::endpoint {
                         }
                     },
                     [&](exception_ptr &e) {
-                        PrintException()(e);
-                        response.send(Http::Code::Bad_Request,
-                                      "Register Wrong");
+                        try {
+                            rethrow_exception(e);
+                        } catch (string &wrongInfo) {
+                            response.send(Http::Code::Bad_Request, "Register Wrong: " + wrongInfo);
+                        }
                     }
             );
         } else {

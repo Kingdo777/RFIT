@@ -4,7 +4,7 @@
 #include "proto/rfit.pb.h"
 #include "ping.h"
 
-void hello_mainEntry(RFIT_NS::Message &m) {
+void hello1_mainEntry(RFIT_NS::Message &m) {
     PING(m)
     m.set_outputdata("Hello World\n");
 }

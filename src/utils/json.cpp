@@ -10,8 +10,8 @@ namespace RFIT_NS::utils {
         d.AddMember("status", msg.status(), a);
         d.AddMember("funcName", Value(msg.funcname().c_str(), msg.funcname().size(), a).Move(), a);
         d.AddMember("memSize", msg.memsize(), a);
-        d.AddMember("coreRation", msg.memsize(), a);
-        d.AddMember("concurrency", msg.memsize(), a);
+        d.AddMember("coreRation", msg.coreration(), a);
+        d.AddMember("concurrency", msg.concurrency(), a);
         if (!msg.message().empty()) {
             d.AddMember("message", Value(msg.message().c_str(), msg.message().size(), a).Move(), a);
         }

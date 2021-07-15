@@ -42,3 +42,7 @@ add_subdirectory(src/proto)
 
 add_executable(main src/main.cpp)
 target_link_libraries(main utils endpoint RFIT)
+
+add_executable(test-format test/for-format.cpp)
+add_executable(test1 test/test.cpp)
+target_link_libraries(test-format dl)

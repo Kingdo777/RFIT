@@ -12,6 +12,8 @@ message Message {
 
   bytes inputData = 5;
   bytes outputData = 6;
+
+  bool isPing = 7;
 }
 
 message FunctionRegisterMsg{

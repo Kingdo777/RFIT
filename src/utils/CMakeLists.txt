@@ -8,4 +8,5 @@ file(GLOB SRC_FILES
 
 set(LIB_FILES ${HEADERS} ${SRC_FILES})
 rfit_private_lib(utils "${LIB_FILES}")
+target_link_libraries(utils dl)
 

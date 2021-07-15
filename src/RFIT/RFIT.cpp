@@ -59,11 +59,17 @@ namespace RFIT_NS {
         return RMap[res.getHash()];
     }
 
-    void makeResponseMsgFromRequest(const FunctionRegisterMsg &msg, FunctionRegisterResponseMsg &responseMsg) {
+    void
+    makeResponseMsgFromRequest(const FunctionRegisterMsg &msg,
+                               FunctionRegisterResponseMsg &responseMsg,
+                               bool status = true,
+                               const string &message = "OK") {
         responseMsg.set_funcname(msg.funcname());
         responseMsg.set_concurrency(msg.concurrency());
         responseMsg.set_coreration(msg.coreration());
         responseMsg.set_memsize(msg.memsize());
+        responseMsg.set_status(status);
+        responseMsg.set_message(message);
     }
 
     void RFIT::handlerFuncRegisterQueue() {
@@ -71,22 +77,40 @@ namespace RFIT_NS {
             auto func = funcRegisterQueue.popSafe();
             if (!func)
                 break;
-            boost::filesystem::path funPath(FUNC_PATH);
-            funPath.append(func->msg.funcname());
-            if (!boost::filesystem::exists(funPath))
-                boost::filesystem::create_directories(funPath);
-            string outputFile = funPath.append("function.so").string();
+            FunctionRegisterResponseMsg msg;
             try {
-                std::ofstream out(outputFile, ios_base::out | ios_base::binary);
-                out.write(func->msg.dldata().c_str(), func->msg.dldata().size()).flush();
-                out.close();
-                FunctionRegisterResponseMsg msg;
-                makeResponseMsgFromRequest(func->msg, msg);
-                msg.set_status(true);
-                msg.set_message("OK");
+                const string &dlPath = utils::makeDL(func->msg.funcname(),
+                                                     func->msg.dldata().c_str(),
+                                                     func->msg.dldata().size());
+                pair<dlResult, std::string> res = utils::getFuncEntry(dlPath,
+                                                                      func->msg.funcname() + config.entrySuffix);
+                if (res.first.handle == nullptr || res.first.addr == nullptr || !res.second.empty()) {
+                    if (res.second.empty())
+                        makeResponseMsgFromRequest(func->msg, msg, false,
+                                                   func->msg.funcname() + "_main" + "is NULL type");
+                    else
+                        makeResponseMsgFromRequest(func->msg, msg, false, res.second);
+                    dlclose(res.first.handle);
+                    boost::filesystem::remove(dlPath);
+                } else {
+                    auto function = (FuncType) res.first.addr;
+                    Message m{};
+                    m.set_isping(true);
+                    function(m);
+                    if (m.outputdata() == "PONG")
+                        makeResponseMsgFromRequest(func->msg, msg, true, "OK");
+                    else {
+                        makeResponseMsgFromRequest(func->msg, msg, false, "Ping Failed");
+                        dlclose(res.first.handle);
+                        boost::filesystem::remove(dlPath);
+                    }
+                }
                 func->deferred.resolve(std::move(msg));
             } catch (exception &e) {
-                func->deferred.reject(current_exception());
+                string s;
+                if (e.what() != nullptr)
+                    s = e.what();
+                func->deferred.reject(s);
             }
         }
     }

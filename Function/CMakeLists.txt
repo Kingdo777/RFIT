@@ -17,6 +17,7 @@ function(rfit_fun lib_name)
 endfunction()
 
 rfit_fun(hello)
+rfit_fun(hello1)
 
 
 

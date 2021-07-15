@@ -9,15 +9,14 @@
 #include <pistache/async.h>
 #include <pistache/os.h>
 #include <utility>
-#include <boost/filesystem.hpp>
 #include "RFIT/TaskPool/TaskPool.h"
 #include "RFIT/R/resource.h"
 #include "RFIT/F/function.h"
 #include "RFIT/I/instance.h"
 #include "RFIT/T/task.h"
 #include "utils/config.h"
+#include "utils/dl.h"
 
-#define FUNC_PATH "/home/kingdo/CLionProjects/RFIT/Function/lib"
 
 #define RFIT_GLOBAL RFIT_NS::getRFIT()
 

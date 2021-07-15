@@ -26,6 +26,8 @@ namespace RFIT_NS::utils {
 
         maxFuncConcurrency = (uint32_t) strtoul(getEnvVar("MAX_FUNC_CONCURRENCY", "0").c_str(), nullptr, 10);
         memAllocGranularity = (uint32_t) strtoul(getEnvVar("MEM_ALLOC_GRANULARITY", "0").c_str(), nullptr, 10);
+
+        entrySuffix = getEnvVar("ENTRY_SUFFIX", "_mainEntry");;
     }
 
     void SystemConfig::reset() {
@@ -43,6 +45,7 @@ namespace RFIT_NS::utils {
         logger->info("overrideCpuCount                {}", overrideCpuCount);
         logger->info("maxFuncConcurrency              {}", maxFuncConcurrency);
         logger->info("memAllocGranularity             {}", memAllocGranularity);
+        logger->info("entrySuffix                     {}", entrySuffix);
         logger->info("--------------- Config ---------------");
     }
 }
