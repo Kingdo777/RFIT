@@ -16,6 +16,8 @@
 #include "RFIT/T/task.h"
 #include "utils/config.h"
 #include "utils/dl.h"
+#include "utils/logging.h"
+#include "utils/json.h"
 
 
 #define RFIT_GLOBAL RFIT_NS::getRFIT()
@@ -37,24 +39,28 @@ namespace RFIT_NS {
 
         void shutdown();
 
-        Pistache::Async::Promise<FunctionRegisterResponseMsg> handlerNewFuncRegister(FunctionRegisterMsg &&msg_);
+        Pistache::Async::Promise<void>
+        handlerNewFuncRegister(FunctionRegisterMsg &&msg_, Pistache::Http::ResponseWriter &&response_);
 
-    private:
+        Pistache::Async::Promise<void> handlerFuncInvoke(Message &msg_);
+
         struct FunctionRegisterEntry {
-            FunctionRegisterEntry() = delete;
-
-            FunctionRegisterEntry(Pistache::Async::Deferred<FunctionRegisterResponseMsg> deferred_,
-                                  FunctionRegisterMsg msg_) :
+            FunctionRegisterEntry(Pistache::Async::Deferred<void> deferred_,
+                                  FunctionRegisterMsg msg_,
+                                  Pistache::Http::ResponseWriter response_) :
                     deferred(move(deferred_)),
-                    msg(std::move(msg_)) {}
+                    msg(std::move(msg_)),
+                    response(std::move(response_)) {}
 
-            Pistache::Async::Deferred<FunctionRegisterResponseMsg> deferred;
+            Pistache::Async::Deferred<void> deferred;
             FunctionRegisterMsg msg;
+            Pistache::Http::ResponseWriter response;
         };
 
         Pistache::Polling::Epoll poller;
 
         Pistache::PollableQueue<FunctionRegisterEntry> funcRegisterQueue;
+        Pistache::PollableQueue<FunctionRegisterMsg> funcRegisterQueue1;
 
         std::unordered_map<uint64_t, std::shared_ptr<R>> RMap;
         std::unordered_map<string, std::shared_ptr<F>> FMap;
@@ -74,16 +80,14 @@ namespace RFIT_NS {
 
         shared_ptr<R> createR(Resource r);
 
-        pair<bool, string> registerF(FunctionRegisterResponseMsg &msg, dlResult &dl, const boost::filesystem::path &p);
+        pair<bool, string> registerF(FunctionRegisterMsg &msg, dlResult &dl, const boost::filesystem::path &p);
 
         void handlerFuncRegisterQueue();
 
-        shared_ptr<F> getF(const string &funcName) {
-            auto it = FMap.find(funcName);
-            if (it == FMap.end())
-                return nullptr;
-            return it->second;
-        }
+        shared_ptr<F> getF(const string &funcName);
+
+        bool existF(const string &funcName);
+
     };
 
     RFIT &getRFIT();

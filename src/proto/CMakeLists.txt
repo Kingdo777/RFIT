@@ -46,7 +46,8 @@ set(LIB_FILES
         ${PB_SRC}
         )
 
-add_library(proto "${LIB_FILES}")
+add_library(proto STATIC "${LIB_FILES}")
+target_compile_options(proto PRIVATE "-fPIC")
 
 target_link_libraries(proto ${PROTOBUF_LIBRARY})
 

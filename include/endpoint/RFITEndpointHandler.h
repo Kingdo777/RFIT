@@ -34,10 +34,9 @@ namespace RFIT_NS::endpoint {
 
         SystemConfig &config;
 
-        template<typename T>
-        Async::Promise<T> dispatchRequest(const Http::Request &request, Http::ResponseWriter &response);
+        int requestToMsg(const Pistache::Http::Request &request, FunctionRegisterMsg &msg) const;
 
-        int requestToFunctionRegisterMsg(const Pistache::Http::Request &request, FunctionRegisterMsg &msg) const;;
+        static int requestToMsg(const Http::Request &request, Message &msg) ;
 
     };
 

@@ -17,10 +17,12 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
 
 function(rfit_private_lib lib_name lib_deps)
     add_library(${lib_name} STATIC ${lib_deps})
+    target_compile_options(${lib_name} PRIVATE "-fPIC")
 endfunction()
 
 function(rfit_public_lib lib_name lib_deps)
     add_library(${lib_name} SHARED ${lib_deps})
+    target_compile_options(${lib_name} PRIVATE "-fPIC")
 endfunction()
 
 
@@ -33,16 +35,22 @@ include(cmake/ExternalProjects.cmake)
 
 include_directories(
         ${RFIT_INCLUDE_DIR}
+        ${PISTACHE_SOURCE_DIR}/include
+        ${RAPIDJSON_INCLUDE_DIR}
 )
 
 add_subdirectory(src/utils)
 add_subdirectory(src/endpoint)
 add_subdirectory(src/RFIT)
 add_subdirectory(src/proto)
+add_subdirectory(Function)
 
 add_executable(main src/main.cpp)
 target_link_libraries(main utils endpoint RFIT)
 
 add_executable(test-format test/for-format.cpp)
 add_executable(test1 test/test.cpp)
+add_executable(bug test/bug.cpp)
 target_link_libraries(test-format dl)
+target_link_libraries(test1 pistache pthread proto)
+target_link_libraries(bug pistache pthread proto)

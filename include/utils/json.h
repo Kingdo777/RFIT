@@ -7,8 +7,6 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
-#include <utils/json.h>
-
 using namespace rapidjson;
 
 namespace RFIT_NS::utils {
@@ -20,6 +18,8 @@ namespace RFIT_NS::utils {
     };
 
     std::string messageToJson(const FunctionRegisterResponseMsg &msg);
+
+    std::string messageToJson(const Message &msg);
 
 
     bool getBoolFromJson(Document &doc, const std::string &key, bool dflt);
@@ -34,4 +34,6 @@ namespace RFIT_NS::utils {
     std::string getStringFromJson(Document &doc,
                                   const std::string &key,
                                   const std::string &dflt);
+
+    std::string jsonTest();
 }

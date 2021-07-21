@@ -6,5 +6,5 @@
 
 void hello_mainEntry(RFIT_NS::Message &m) {
     PING(m)
-    m.set_outputdata("Hello World\n");
+    m.set_outputdata("Hello World");
 }

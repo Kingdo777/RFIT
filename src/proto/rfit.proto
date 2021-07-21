@@ -3,9 +3,9 @@ syntax = "proto3";
 package RFIT_NS;
 
 message Message {
-  int32 id = 1;
+  uint32 id = 1;
 
-  int32 funcPtr = 2;
+  string funcName = 2;
 
   uint64 timestamp = 3;
   uint64 finishTimestamp = 4;

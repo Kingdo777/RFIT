@@ -1,20 +1,43 @@
 #include <utils/json.h>
 
 namespace RFIT_NS::utils {
-    std::string messageToJson(const FunctionRegisterResponseMsg &msg) {
+//    std::string messageToJson(const FunctionRegisterResponseMsg &msg) {
+//        Document d;
+//        d.SetObject();
+//        Document::AllocatorType &a = d.GetAllocator();
+//        // Need to be explicit with strings here to make a copy _and_ make sure we
+//        // specify the length to include any null-terminators from bytes
+//        d.AddMember("status", msg.status(), a);
+//        d.AddMember("funcName", Value(msg.funcname().c_str(), msg.funcname().size(), a).Move(), a);
+//        d.AddMember("memSize", msg.memsize(), a);
+//        d.AddMember("coreRation", msg.coreration(), a);
+//        d.AddMember("concurrency", msg.concurrency(), a);
+//        if (!msg.message().empty()) {
+//            d.AddMember("message", Value(msg.message().c_str(), msg.message().size(), a).Move(), a);
+//        }
+//        StringBuffer sb;
+//        Writer<StringBuffer> writer(sb);
+//        d.Accept(writer);
+//        return sb.GetString();
+//    }
+
+    std::string messageToJson(const Message &msg) {
         Document d;
         d.SetObject();
         Document::AllocatorType &a = d.GetAllocator();
         // Need to be explicit with strings here to make a copy _and_ make sure we
         // specify the length to include any null-terminators from bytes
-        d.AddMember("status", msg.status(), a);
+        d.AddMember("id", msg.id(), a);
         d.AddMember("funcName", Value(msg.funcname().c_str(), msg.funcname().size(), a).Move(), a);
-        d.AddMember("memSize", msg.memsize(), a);
-        d.AddMember("coreRation", msg.coreration(), a);
-        d.AddMember("concurrency", msg.concurrency(), a);
-        if (!msg.message().empty()) {
-            d.AddMember("message", Value(msg.message().c_str(), msg.message().size(), a).Move(), a);
+        d.AddMember("timestamp", msg.timestamp(), a);
+        d.AddMember("finishTimestamp", msg.finishtimestamp(), a);
+        if (!msg.inputdata().empty()) {
+            d.AddMember("inputData", Value(msg.inputdata().c_str(), msg.inputdata().size(), a).Move(), a);
         }
+        if (!msg.outputdata().empty()) {
+            d.AddMember("outputData", Value(msg.outputdata().c_str(), msg.outputdata().size(), a).Move(), a);
+        }
+        d.AddMember("isPing", msg.isping(), a);
         StringBuffer sb;
         Writer<StringBuffer> writer(sb);
         d.Accept(writer);
@@ -85,6 +108,17 @@ namespace RFIT_NS::utils {
         }
 
         return it->value.GetInt();
+    }
+
+    std::string jsonTest() {
+        // 1. 把 JSON 解析至 DOM。
+        const char *json = R"({"project":"rapidjson","stars":10})";
+        Document d;
+        d.Parse(json);
+        StringBuffer buffer;
+        Writer<StringBuffer> writer(buffer);
+        d.Accept(writer);
+        return buffer.GetString();
     }
 
     std::string getValueFromJsonString(const std::string &key,

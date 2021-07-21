@@ -75,16 +75,10 @@ def register(ctx, func, concurrency=1, core=0, mem=0):
 
 
 @task()
-def invoke(ctx, user, func, input_data=None, host="127.0.0.1", port=8080):
-    url = "http://{}:{}".format(host, port)
+def invoke(ctx, func):
+    url = "http://localhost:8080/invoke/{}".format(func)
     data = {
-        "function": func,
-        "user": user,
+        "name": "Kingdo"
     }
-
-    if input_data:
-        data["input_data"] = input_data
-
     response = requests.post(url, json=data)
-
     print("Response {}:\n{}".format(response.status_code, response.text))

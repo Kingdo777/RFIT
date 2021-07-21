@@ -24,13 +24,7 @@ namespace RFIT_NS {
                    shared_ptr<R> r_,
                    utils::dlResult dr_,
                    boost::filesystem::path p,
-                   uint32_t concurrency = 1) :
-                funcName(funcName_),
-                dr(dr_),
-                dlPath(std::move(p)),
-                r(std::move(r_)),
-                concurrency(concurrency) {
-        };
+                   uint32_t concurrency = 1);;
 
         [[nodiscard]] const string &getFuncName() const {
             return funcName;
@@ -52,6 +46,8 @@ namespace RFIT_NS {
             return concurrency > 1;
         }
 
+        void invoke(Message &msg);
+
     private:
 
         const string &funcName;
@@ -63,7 +59,6 @@ namespace RFIT_NS {
         shared_ptr<R> r;
 
         uint32_t concurrency = 1;
-
 
     };
 }

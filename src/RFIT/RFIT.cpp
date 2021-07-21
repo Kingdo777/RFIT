@@ -24,8 +24,8 @@ namespace RFIT_NS {
             shutdownFd.bind(poller);
 
         rfitThread = thread([this]() {
-            vector<Pistache::Polling::Event> events;
             for (;;) {
+                vector<Pistache::Polling::Event> events;
                 int ready_fds = poller.poll(events);
                 if (ready_fds == -1) {
                     throw runtime_error("Polling");
@@ -67,7 +67,7 @@ namespace RFIT_NS {
     }
 
     pair<bool, string>
-    RFIT::registerF(FunctionRegisterResponseMsg &msg, dlResult &dl, const boost::filesystem::path &p) {
+    RFIT::registerF(FunctionRegisterMsg &msg, dlResult &dl, const boost::filesystem::path &p) {
         if (!pingFunc((FuncType) dl.addr)) {
             close_remove_DL(p, dl.handle);
             return pair<bool, string>(false, "Ping Failed");
@@ -84,10 +84,10 @@ namespace RFIT_NS {
     }
 
     void
-    makeResponseMsgFromRequest(const FunctionRegisterMsg &msg,
-                               FunctionRegisterResponseMsg &responseMsg,
-                               bool status = true,
-                               const string &message = "OK") {
+    makeFuncRegisterResponseMsg(const FunctionRegisterMsg &msg,
+                                FunctionRegisterResponseMsg &responseMsg,
+                                bool status = true,
+                                const string &message = "OK") {
         responseMsg.set_funcname(msg.funcname());
         responseMsg.set_concurrency(msg.concurrency());
         responseMsg.set_coreration(msg.coreration());
@@ -96,12 +96,27 @@ namespace RFIT_NS {
         responseMsg.set_message(message);
     }
 
+    void sendResponse(const FunctionRegisterResponseMsg &m, const shared_ptr<RFIT::FunctionRegisterEntry> &func) {
+        if (m.status()) {
+            func->response.send(Pistache::Http::Code::Ok, "OK");
+        } else {
+            func->response.send(Pistache::Http::Code::Bad_Request, "Register Failed:" + m.message());
+        }
+        func->deferred.resolve();
+    }
 
     void RFIT::handlerFuncRegisterQueue() {
         for (;;) {
-            auto func = funcRegisterQueue.popSafe();
+            shared_ptr<FunctionRegisterEntry> func = funcRegisterQueue.popSafe();
             if (!func)
                 break;
+
+            if (existF(func->msg.funcname())) {
+                func->response.send(Pistache::Http::Code::Bad_Request,
+                                    "Register Failed:" + func->msg.funcname() + " is exist!");
+                func->deferred.resolve();
+                break;
+            }
             FunctionRegisterResponseMsg msg;
             try {
                 const string &dlPath = utils::makeDL(func->msg.funcname(),
@@ -112,28 +127,55 @@ namespace RFIT_NS {
                 if (res.first.handle == nullptr || res.first.addr == nullptr || !res.second.empty()) {
                     const string &message = res.second.empty() ? (func->msg.funcname() + "_main" + "is NULL type")
                                                                : res.second;
-                    makeResponseMsgFromRequest(func->msg, msg, false, message);
+                    makeFuncRegisterResponseMsg(func->msg, msg, false, message);
                 } else {
-                    auto info = registerF(msg, res.first, dlPath);
-                    makeResponseMsgFromRequest(func->msg, msg, info.first, info.second);
+                    auto info = registerF(func->msg, res.first, dlPath);
+                    makeFuncRegisterResponseMsg(func->msg, msg, info.first, info.second);
                 }
-                func->deferred.resolve(std::move(msg));
+                sendResponse(msg, func);
             } catch (exception &e) {
                 string s;
                 if (e.what() != nullptr)
                     s = e.what();
+                func->response.send(Pistache::Http::Code::Bad_Request,
+                                    "Register Wrong: " + s);
                 func->deferred.reject(s);
             }
         }
     }
 
-    Pistache::Async::Promise<FunctionRegisterResponseMsg>
-    RFIT::handlerNewFuncRegister(FunctionRegisterMsg &&msg_) {
-        return Pistache::Async::Promise<FunctionRegisterResponseMsg>(
-                [&](Pistache::Async::Deferred<FunctionRegisterResponseMsg> deferred) {
-                    FunctionRegisterEntry func(std::move(deferred), msg_);
+    Pistache::Async::Promise<void>
+    RFIT::handlerNewFuncRegister(FunctionRegisterMsg &&msg_, Pistache::Http::ResponseWriter &&response_) {
+        return Pistache::Async::Promise<void>(
+                [&](Pistache::Async::Deferred<void> deferred) {
+                    FunctionRegisterEntry func(std::move(deferred), std::move(msg_), std::move(response_));
                     this->funcRegisterQueue.push(std::move(func));
                 });
+    }
+
+    Pistache::Async::Promise<void> RFIT::handlerFuncInvoke(Message &msg) {
+        default_logger->info("handlerFuncInvoke" + utils::messageToJson(msg));
+        return Pistache::Async::Promise<void>([&](Pistache::Async::Deferred<void> deferred) {
+            const std::string &funcName = msg.funcname();
+            auto f = getF(funcName);
+            if (f) {
+                f->invoke(msg);
+                deferred.resolve();
+            } else {
+                deferred.reject("No Function Found For " + funcName);
+            }
+        });
+    }
+
+    shared_ptr<F> RFIT::getF(const string &funcName) {
+        auto it = FMap.find(funcName);
+        if (it == FMap.end())
+            return nullptr;
+        return it->second;
+    }
+
+    bool RFIT::existF(const string &funcName) {
+        return FMap.find(funcName) != FMap.end();
     }
 
 
