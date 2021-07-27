@@ -5,9 +5,9 @@
 
 
 #ifdef OPEN_TRACE
-#define PROF_START(name) const RFIT::utils::TimePoint time_point_##name = RFIT::utils::startTimer();
-#define PROF_END(name) RFIT::utils::logEndTimer(#name, time_point_##name);
-#define PROF_SUMMARY RFIT::utils::printTimerTotals();
+#define PROF_START(name) const RFIT_NS::utils::TimePoint time_point_##name = RFIT_NS::utils::startTimer();
+#define PROF_END(name) RFIT_NS::utils::logEndTimer(#name, time_point_##name);
+#define PROF_SUMMARY RFIT_NS::utils::printTimerTotals();
 #else
 #define PROF_BEGIN
 #define PROF_START(name)

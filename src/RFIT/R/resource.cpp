@@ -1,7 +1,8 @@
 //
 // Created by kingdo on 2020/10/23.
 //
-#include "RFIT/R/resource.h"
+#include <RFIT/core.h>
+
 
 namespace RFIT_NS {
     CpuResource::Impl::Impl(uint64_t cpu_shares, int64_t cfs_quota_us, int64_t cfs_period_us) :

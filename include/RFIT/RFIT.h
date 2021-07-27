@@ -5,15 +5,12 @@
 #ifndef RFIT_RFIT_H
 #define RFIT_RFIT_H
 
+#include <pistache/http.h>
 #include <pistache/mailbox.h>
 #include <pistache/async.h>
 #include <pistache/os.h>
 #include <utility>
-#include "RFIT/TaskPool/TaskPool.h"
-#include "RFIT/R/resource.h"
-#include "RFIT/F/function.h"
-#include "RFIT/I/instance.h"
-#include "RFIT/T/task.h"
+#include "TaskPool.h"
 #include "utils/config.h"
 #include "utils/dl.h"
 #include "utils/logging.h"
@@ -42,7 +39,8 @@ namespace RFIT_NS {
         Pistache::Async::Promise<void>
         handlerNewFuncRegister(FunctionRegisterMsg &&msg_, Pistache::Http::ResponseWriter &&response_);
 
-        Pistache::Async::Promise<void> handlerFuncInvoke(Message &msg_);
+        Pistache::Async::Promise<void>
+        handlerFuncInvoke(Message &&msg_, Pistache::Http::ResponseWriter &&response_);
 
         struct FunctionRegisterEntry {
             FunctionRegisterEntry(Pistache::Async::Deferred<void> deferred_,
@@ -60,13 +58,9 @@ namespace RFIT_NS {
         Pistache::Polling::Epoll poller;
 
         Pistache::PollableQueue<FunctionRegisterEntry> funcRegisterQueue;
-        Pistache::PollableQueue<FunctionRegisterMsg> funcRegisterQueue1;
 
         std::unordered_map<uint64_t, std::shared_ptr<R>> RMap;
         std::unordered_map<string, std::shared_ptr<F>> FMap;
-
-        std::unordered_map<uint64_t, std::shared_ptr<Pistache::PollableQueue<I>>> RIQueue;
-        std::shared_mutex RIQueueLock;
 
         utils::SystemConfig &config;
 
@@ -74,6 +68,8 @@ namespace RFIT_NS {
         bool running = false;
 
         Pistache::NotifyFd shutdownFd;
+
+        TaskPool tp;
 
     private:
         void run();

@@ -2,7 +2,6 @@
 // Created by kingdo on 2021/7/8.
 //
 
-#include <pistache/http.h>
 #include "RFIT/RFIT.h"
 
 namespace RFIT_NS {
@@ -51,9 +50,6 @@ namespace RFIT_NS {
         if (RMap.find(res.getHash()) == end(RMap)) {
             auto r = std::make_shared<R>(move(res));
             RMap.emplace(r->getHash(), r);
-            WriteLock lock(RIQueueLock);
-            RIQueue.emplace(r->getHash(), std::make_shared<Pistache::PollableQueue<I>>());
-            RIQueue[r->getHash()]->bind(poller);
             return r;
         }
         return RMap[res.getHash()];
@@ -153,18 +149,21 @@ namespace RFIT_NS {
                 });
     }
 
-    Pistache::Async::Promise<void> RFIT::handlerFuncInvoke(Message &msg) {
+    Pistache::Async::Promise<void> RFIT::handlerFuncInvoke(Message &&msg, Pistache::Http::ResponseWriter &&response) {
         default_logger->info("handlerFuncInvoke" + utils::messageToJson(msg));
-        return Pistache::Async::Promise<void>([&](Pistache::Async::Deferred<void> deferred) {
-            const std::string &funcName = msg.funcname();
-            auto f = getF(funcName);
-            if (f) {
-                f->invoke(msg);
-                deferred.resolve();
-            } else {
-                deferred.reject("No Function Found For " + funcName);
-            }
-        });
+        return Pistache::Async::Promise<void>(
+                [&](Pistache::Async::Deferred<void> deferred) {
+                    const std::string &funcName = msg.funcname();
+                    auto f = getF(funcName);
+                    if (!f) {
+                        response.send(Http::Code::Bad_Request, "No Function Found For " + funcName);
+                        deferred.resolve();
+                    } else {
+                        auto instance = make_shared<I>(std::move(msg), f->getR(), f);
+                        T::InvokeEntry invokeEntry(std::move(deferred), std::move(instance), std::move(response));
+                        tp.dispatch(std::move(invokeEntry));
+                    }
+                });
     }
 
     shared_ptr<F> RFIT::getF(const string &funcName) {

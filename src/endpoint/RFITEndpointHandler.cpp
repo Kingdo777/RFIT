@@ -25,17 +25,9 @@ namespace RFIT_NS::endpoint {
                 response.send(Http::Code::Bad_Request,
                               "Request Format Wrong，Url Must Be：/invoke/funcName; Method Must Be POST ");
             } else {
-                rfit.handlerFuncInvoke(msg).then(
-                        [&]() {
-                            response.send(Http::Code::Ok, msg.outputdata());
-                        },
-                        [&](exception_ptr &e) {
-                            try {
-                                rethrow_exception(e);
-                            } catch (string &failedInfo) {
-                                response.send(Http::Code::Bad_Request, "Invoke Failed: " + failedInfo);
-                            }
-                        });
+                rfit.handlerFuncInvoke(std::move(msg), std::move(response)).then(
+                        [] {},
+                        PrintException());
             }
         } else {
             response.send(Http::Code::Bad_Request).then(

@@ -1,12 +1,13 @@
 option(STEAL_INSTANCE "if open the STEAL_INSTANCE" OFF)
 
 file(GLOB HEADERS
-        "${RFIT_INCLUDE_DIR}/RFIT/R/*.h"
-        "${RFIT_INCLUDE_DIR}/RFIT/F/*.h"
-        "${RFIT_INCLUDE_DIR}/RFIT/I/*.h"
-        "${RFIT_INCLUDE_DIR}/RFIT/T/*.h"
+#        "${RFIT_INCLUDE_DIR}/RFIT/R/*.h"
+#        "${RFIT_INCLUDE_DIR}/RFIT/F/*.h"
+#        "${RFIT_INCLUDE_DIR}/RFIT/I/*.h"
+#        "${RFIT_INCLUDE_DIR}/RFIT/T/*.h"
         "${RFIT_INCLUDE_DIR}/RFIT/TaskPool/*.h"
         "${RFIT_INCLUDE_DIR}/RFIT/RFIT.h"
+        "${RFIT_INCLUDE_DIR}/RFIT/core.h"
         )
 
 file(GLOB SRC_FILES

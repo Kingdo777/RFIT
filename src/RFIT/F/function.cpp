@@ -2,11 +2,11 @@
 // Created by kingdo on 10/17/20.
 //
 
-#include "RFIT/F/function.h"
-#include "utils/logging.h"
+#include <RFIT/core.h>
+
 
 namespace RFIT_NS {
-    F::F(const string &funcName_, shared_ptr<R> r_, utils::dlResult dr_, boost::filesystem::path p,
+    F::F(string &funcName_, shared_ptr<R> r_, utils::dlResult dr_, boost::filesystem::path p,
          uint32_t concurrency) :
             funcName(funcName_),
             dr(dr_),
@@ -20,4 +20,13 @@ namespace RFIT_NS {
         msg.set_isping(false);
         func(msg);
     }
+
+    bool F::getT(shared_ptr<T> &t) {
+        return TList.takeOne(t, concurrency);
+    }
+
+    void F::newT(const shared_ptr<T> &t, bool take) {
+        TList.newOne(t, take);
+    }
+
 }
