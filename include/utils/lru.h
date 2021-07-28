@@ -7,6 +7,7 @@
 
 #include <list>
 #include <unordered_map>
+#include <vector>
 #include <utils/locks.h>
 
 using namespace std;
@@ -22,6 +23,15 @@ namespace RFIT_NS::utils {
                 l.erase(i_map->second);
             }
             add(t, u);
+        }
+
+        std::vector<T> getSortedItem() {
+            utils::UniqueLock lru_lock(mutex);
+            std::vector<T> t;
+            for (auto i = l.begin(); i != l.end(); i++) {
+                t.push_back(*i);
+            }
+            return t;
         }
 
     private:

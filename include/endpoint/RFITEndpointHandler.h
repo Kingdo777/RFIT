@@ -36,7 +36,10 @@ namespace RFIT_NS::endpoint {
 
         int requestToMsg(const Pistache::Http::Request &request, FunctionRegisterMsg &msg) const;
 
-        static int requestToMsg(const Http::Request &request, Message &msg) ;
+        void handleGetRequest(const Pistache::Http::Request &request,
+                              Pistache::Http::ResponseWriter response);
+
+        static int requestToMsg(const Http::Request &request, Message &msg);
 
     };
 

@@ -265,7 +265,7 @@ namespace RFIT_NS {
 
         void doClean();
 
-        void doLog();
+        void doLog(const shared_ptr<InvokeEntry> &invokeEntry);
 
         void doChangeICount();
 
@@ -277,8 +277,11 @@ namespace RFIT_NS {
 
         void newOne(const shared_ptr<T> &t, bool take = true);
 
+        bool takeIdleOne(shared_ptr<T> &t);
+
         bool takeOne(shared_ptr<T> &t, int maxCount);
 
+        void shutdown();
 
     private:
         void putOrUpdate(int increment, const shared_ptr<T> &t);
@@ -308,7 +311,7 @@ namespace RFIT_NS {
 
         F() = delete;
 
-        explicit F(string &funcName_,
+        explicit F(string funcName_,
                    shared_ptr<R> r_,
                    utils::dlResult dr_,
                    boost::filesystem::path p,
@@ -336,10 +339,14 @@ namespace RFIT_NS {
 
         void invoke(Message &msg);
 
+        bool getIdleT(shared_ptr<T> &t);
+
         bool getT(shared_ptr<T> &t);
 
         /// take 表示此T将在TList计数加+1
         void newT(const shared_ptr<T> &t, bool take = true);
+
+        void shutdownAllT();
 
     private:
 

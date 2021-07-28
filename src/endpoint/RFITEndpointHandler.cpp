@@ -29,6 +29,8 @@ namespace RFIT_NS::endpoint {
                         [] {},
                         PrintException());
             }
+        } else if (request.method() == Http::Method::Get) {
+            handleGetRequest(request, std::move(response));
         } else {
             response.send(Http::Code::Bad_Request).then(
                     [](ssize_t bytes) { std::cout << bytes << " bytes have been sent\n"; },
@@ -93,6 +95,11 @@ namespace RFIT_NS::endpoint {
         msg.set_inputdata(request.body());
         msg.set_isping(false);
         return 0;
+    }
+
+    void RFITEndpointHandler::handleGetRequest(const Http::Request &request, Pistache::Http::ResponseWriter response) {
+        assert(request.method() == Http::Method::Get);
+        response.send(Http::Code::Ok, "OK");
     }
 
 }

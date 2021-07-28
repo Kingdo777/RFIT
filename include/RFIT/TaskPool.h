@@ -24,8 +24,14 @@ namespace RFIT_NS {
     private:
 
         LRU<shared_ptr<R>, uint64_t> R_list;
+        std::mutex mutex;
 
     private:
+
+        static bool getTFromOtherFInSameR(const shared_ptr<F> &selfF, shared_ptr<T> &t);
+
+        bool getTFromOtherR(const shared_ptr<R> &selfR, shared_ptr<T> &t);
+
         static shared_ptr<T> newT() {
             auto t = make_shared<T>();
             return t;

@@ -2,6 +2,7 @@
 // Created by kingdo on 10/20/20.
 //
 #include <RFIT/core.h>
+#include <utils/clock.h>
 
 namespace RFIT_NS {
 
@@ -112,7 +113,7 @@ namespace RFIT_NS {
         invokeEntry->response.send(Http::Code::Ok, invokeEntry->instance->msg.outputdata());
         invokeEntry->deferred.resolve();
         doClean();
-        doLog();
+        doLog(invokeEntry);
         doChangeICount();
     }
 
@@ -121,8 +122,8 @@ namespace RFIT_NS {
 
     }
 
-    void T::doLog() {
-
+    void T::doLog(const shared_ptr<InvokeEntry> &invokeEntry) {
+        invokeEntry->instance->msg.set_finishtimestamp(utils::Clock::epochMillis());
     }
 
     void T::doChangeICount() {
@@ -185,6 +186,20 @@ namespace RFIT_NS {
         putOrUpdate(i, t);
     }
 
+    bool TSortList::takeIdleOne(shared_ptr<T> &t) {
+        utils::UniqueLock lock(mutex);
+        if (l.empty())
+            return false;
+        auto t_ = l.front();
+        if (t_.first == 0) {
+            t = t_.second;
+            l.pop_front();
+            map.erase(t->getID());
+            return true;
+        }
+        return false;
+    }
+
     bool TSortList::takeOne(shared_ptr<T> &t, int maxCount) {
         utils::UniqueLock lock(mutex);
         if (l.empty())
@@ -203,6 +218,13 @@ namespace RFIT_NS {
         shared_ptr<T> t;
         assert(getT(key, t));
         putOrUpdate(-1, t);
+    }
+
+    void TSortList::shutdown() {
+        utils::UniqueLock lock(mutex);
+        for (const auto &t : l) {
+            t.second->shutdown();
+        }
     }
 
 }
