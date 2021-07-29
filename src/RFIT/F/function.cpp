@@ -36,7 +36,12 @@ namespace RFIT_NS {
     }
 
     void F::shutdownAllT() {
+        TList.shutdown();
+        TList.flush();
+    }
 
+    std::vector<shared_ptr<T>> F::getAllT() {
+        return TList.getSortedItem();
     }
 
 }

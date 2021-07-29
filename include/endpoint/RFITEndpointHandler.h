@@ -36,6 +36,9 @@ namespace RFIT_NS::endpoint {
 
         int requestToMsg(const Pistache::Http::Request &request, FunctionRegisterMsg &msg) const;
 
+
+        void getRFTInfo(string &content);
+
         void handleGetRequest(const Pistache::Http::Request &request,
                               Pistache::Http::ResponseWriter response);
 

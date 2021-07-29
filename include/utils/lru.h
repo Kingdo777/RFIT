@@ -28,10 +28,15 @@ namespace RFIT_NS::utils {
         std::vector<T> getSortedItem() {
             utils::UniqueLock lru_lock(mutex);
             std::vector<T> t;
-            for (auto i = l.begin(); i != l.end(); i++) {
-                t.push_back(*i);
+            for (const auto i : l) {
+                t.push_back(i);
             }
             return t;
+        }
+
+        void flush() {
+            l.clear();
+            map.clear();
         }
 
     private:

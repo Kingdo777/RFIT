@@ -55,7 +55,7 @@ def compile(ctx, func, clean=False, debug=False):
 
 # /register/functionName/concurrency/core/mem
 @task(default=True)
-def register(ctx, func, concurrency=1, core=0, mem=0):
+def register(ctx, func, concurrency, core=0, mem=0):
     """
     Register function
     """
@@ -82,3 +82,19 @@ def invoke(ctx, func):
     }
     response = requests.post(url, json=data)
     print("Response {}:\n{}".format(response.status_code, response.text))
+
+
+@task()
+def hey(ctx, func, n, c):
+    url = "http://localhost:8080/invoke/{}".format(func)
+    cmd = "hey -n {} -c {} -m POST -t 0 -d ".format(n, c) + "\"{\"name\": \"Kingdo\"}\" " + url
+    print(cmd)
+    res = run(cmd, shell=True)
+
+
+@task()
+def getRFT(ctx):
+    url = "http://localhost:8080/rft/info"
+    response = requests.get(url)
+    print("Response Code:{}".format(response.status_code))
+    print(response.text)

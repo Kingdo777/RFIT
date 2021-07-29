@@ -44,6 +44,7 @@ namespace RFIT_NS {
         if (shutdownFd.isBound())
             shutdownFd.notify();
         rfitThread.join();
+        tp.shutdown();
     }
 
     shared_ptr<R> RFIT::createR(Resource res) {
@@ -142,6 +143,7 @@ namespace RFIT_NS {
 
     Pistache::Async::Promise<void>
     RFIT::handlerNewFuncRegister(FunctionRegisterMsg &&msg_, Pistache::Http::ResponseWriter &&response_) {
+        default_logger->info("handlerNewFuncRegister" + utils::messageToJson(msg_));
         return Pistache::Async::Promise<void>(
                 [&](Pistache::Async::Deferred<void> deferred) {
                     FunctionRegisterEntry func(std::move(deferred), std::move(msg_), std::move(response_));

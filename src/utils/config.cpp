@@ -24,8 +24,8 @@ namespace RFIT_NS::utils {
 
         overrideCpuCount = (uint32_t) strtoul(getEnvVar("OVERRIDE_CPU_COUNT", "0").c_str(), nullptr, 10);
 
-        maxFuncConcurrency = (uint32_t) strtoul(getEnvVar("MAX_FUNC_CONCURRENCY", "0").c_str(), nullptr, 10);
-        memAllocGranularity = (uint32_t) strtoul(getEnvVar("MEM_ALLOC_GRANULARITY", "0").c_str(), nullptr, 10);
+        maxFuncConcurrency = (uint32_t) strtoul(getEnvVar("MAX_FUNC_CONCURRENCY", "1000").c_str(), nullptr, 10);
+        memAllocGranularity = (uint32_t) strtoul(getEnvVar("MEM_ALLOC_GRANULARITY", "16").c_str(), nullptr, 10);
 
         entrySuffix = getEnvVar("ENTRY_SUFFIX", "_mainEntry");;
     }

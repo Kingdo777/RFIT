@@ -62,8 +62,8 @@ namespace RFIT_NS {
         }
 
         [[nodiscard]] string toString() const {
-            return "CpuResource::cpu_shares-" + to_string(impl.cpuShares) + "::cfs_quota_us-" +
-                   to_string(impl.cfs_quota_us) + "::cfs_period_us-" + to_string(impl.cfs_period_us);
+            return "CpuResource::cpu_shares-" + to_string(impl.cpuShares) + " ::cfs_quota_us-" +
+                   to_string(impl.cfs_quota_us) + " ::cfs_period_us-" + to_string(impl.cfs_period_us);
         }
 
     private:
@@ -99,7 +99,7 @@ namespace RFIT_NS {
         }
 
         [[nodiscard]] string toString() const {
-            return "MemResource::mem_soft_limit-" + to_string(impl.mem_soft_limit) + "::mem_hard_limit-" +
+            return "MemResource::mem_soft_limit-" + to_string(impl.mem_soft_limit) + " ::mem_hard_limit-" +
                    to_string(impl.mem_hard_limit);
         }
 
@@ -128,7 +128,7 @@ namespace RFIT_NS {
         [[nodiscard]] uint64_t getHash() const { return impl.hash; }
 
         [[nodiscard]] string toString() const {
-            return "Resource::{" + impl.cpu.toString() + "," + impl.mem.toString() + "}";
+            return "Resource::{" + impl.cpu.toString() + ", " + impl.mem.toString() + "}";
         }
 
     private:
@@ -158,6 +158,10 @@ namespace RFIT_NS {
 
         LRU<shared_ptr<F>, string> &getFList() {
             return F_list;
+        }
+
+        string toString() {
+            return "R: " + resource.toString();
         }
 
     private:
@@ -209,6 +213,12 @@ namespace RFIT_NS {
         public:
             void set() { tid = this_thread::get_id(); }
 
+            string toString() {
+                std::ostringstream oss;
+                oss << tid;
+                return "{tid:" + oss.str() + "}";
+            }
+
         private:
             std::thread::id tid;
         };
@@ -235,6 +245,19 @@ namespace RFIT_NS {
             Pistache::Http::ResponseWriter response;
         };
 
+        string toString() {
+            return "T: {id:" + to_string(id) +
+                   ", context:" + context.toString() +
+                   ", ICount:" + to_string(ICount) +
+                    ", workCount:" + to_string(workCount) +
+                    ", dispatchCount:" + to_string(dispatchCount) +
+                   "}";
+        }
+
+        void incDispatchCount() {
+            dispatchCount++;
+        }
+
     private:
         uint64_t id = utils::generateGid();
 
@@ -246,6 +269,8 @@ namespace RFIT_NS {
         shared_ptr<R> currentResource = nullptr;
         shared_ptr<F> workFor = nullptr;
         uint64_t ICount = 0;
+        uint64_t workCount = 0;
+        uint64_t dispatchCount = 0;
 
         std::atomic<bool> shutdown_;
         NotifyFd shutdownFd;
@@ -282,6 +307,10 @@ namespace RFIT_NS {
         bool takeOne(shared_ptr<T> &t, int maxCount);
 
         void shutdown();
+
+        void flush();
+
+        std::vector<shared_ptr<T>> getSortedItem();
 
     private:
         void putOrUpdate(int increment, const shared_ptr<T> &t);
@@ -347,6 +376,13 @@ namespace RFIT_NS {
         void newT(const shared_ptr<T> &t, bool take = true);
 
         void shutdownAllT();
+
+        std::vector<shared_ptr<T>> getAllT();
+
+        string toString() {
+            return "F: {funcName:" + funcName + ", conc:" + to_string(concurrency) + ", dlPath:" + dlPath.string() +
+                   "}";
+        }
 
     private:
 

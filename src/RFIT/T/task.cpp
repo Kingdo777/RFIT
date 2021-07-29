@@ -10,8 +10,9 @@ namespace RFIT_NS {
         for (auto e: events) {
             if (e.tag == shutdownFd.tag())
                 return;
-            if (e.tag == IQueue.tag())
+            if (e.tag == IQueue.tag()) {
                 handleIQueue();
+            }
         }
     }
 
@@ -56,10 +57,12 @@ namespace RFIT_NS {
             shared_ptr<InvokeEntry> invokeEntry = IQueue.popSafe();
             if (!invokeEntry)
                 break;
-            //// 如果不是异步执行，那么ICount是没有任何意义的变量
+            //// 如果不是异步执行，那么ICount是没有任何意义的变量 TODO
             ICount++;
+            dispatchCount++;
+            workCount++;
             // 配置正确的Cgroup
-            adjustResource(invokeEntry->instance);
+            assert(adjustResource(invokeEntry->instance));
             doExecute(invokeEntry);
         }
     }
@@ -134,7 +137,7 @@ namespace RFIT_NS {
     void TSortList::putOrUpdate(int increment, const shared_ptr<T> &t) {
         auto key = t->getID();
         if (map.find(key) == map.end()) {
-            insert(0, t, l.begin());
+            insert(increment, t, l.begin());
             return;
         }
         auto item = map[key];
@@ -149,6 +152,7 @@ namespace RFIT_NS {
                       bool back) {
         uint64_t key = t->getID();
         /// 保证count不能是负数
+//        assert(count >= 0);
         if (count < 0)
             count = 0;
         if (l.empty()) {
@@ -225,6 +229,21 @@ namespace RFIT_NS {
         for (const auto &t : l) {
             t.second->shutdown();
         }
+    }
+
+    void TSortList::flush() {
+        utils::UniqueLock lock(mutex);
+        l.clear();
+        map.clear();
+    }
+
+    std::vector<shared_ptr<T>> TSortList::getSortedItem() {
+        utils::UniqueLock lock(mutex);
+        std::vector<shared_ptr<T>> t;
+        for (const auto &item : l) {
+            t.push_back(item.second);
+        }
+        return t;
     }
 
 }

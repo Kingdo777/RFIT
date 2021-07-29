@@ -12,7 +12,7 @@ namespace RFIT_NS::utils {
         std::string logFile;
 
         uint32_t listenPort = 8080;
-        uint32_t reactorThreadCount = 1;
+        uint32_t reactorThreadCount = 12;
         uint32_t workerThreadCount = 1;
 
         uint32_t overrideCpuCount = 0;

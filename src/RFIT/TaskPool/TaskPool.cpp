@@ -16,7 +16,9 @@ namespace RFIT_NS {
             for (const auto &f:Fs) {
                 f->shutdownAllT();
             }
+            r->getFList().flush();
         }
+        R_list.flush();
     }
 
     void TaskPool::dispatch(T::InvokeEntry &&invokeEntry) {
@@ -62,5 +64,29 @@ namespace RFIT_NS {
             }
         }
         return false;
+    }
+
+    TaskPool::RFT_LIST TaskPool::getRFT() {
+        RFT_LIST rftList;
+        utils::UniqueLock lock(mutex);
+        auto Rs = R_list.getSortedItem();
+        int i_r = 0, i_f = 0;
+        for (const auto &r:Rs) {
+            rftList.r.push_back(r);
+            rftList.f.emplace_back();
+            rftList.t.emplace_back();
+            auto Fs = r->getFList().getSortedItem();
+            for (const auto &f:Fs) {
+                rftList.f[i_r].push_back(f);
+                rftList.t[i_r].emplace_back();
+                auto Ts = f->getAllT();
+                for (const auto &t:Ts) {
+                    rftList.t[i_r][i_f].push_back(t);
+                }
+                i_f++;
+            }
+            i_r++;
+        }
+        return rftList;
     }
 }

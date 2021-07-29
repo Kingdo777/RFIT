@@ -1,25 +1,41 @@
 #include <utils/json.h>
 
 namespace RFIT_NS::utils {
-//    std::string messageToJson(const FunctionRegisterResponseMsg &msg) {
-//        Document d;
-//        d.SetObject();
-//        Document::AllocatorType &a = d.GetAllocator();
-//        // Need to be explicit with strings here to make a copy _and_ make sure we
-//        // specify the length to include any null-terminators from bytes
-//        d.AddMember("status", msg.status(), a);
-//        d.AddMember("funcName", Value(msg.funcname().c_str(), msg.funcname().size(), a).Move(), a);
-//        d.AddMember("memSize", msg.memsize(), a);
-//        d.AddMember("coreRation", msg.coreration(), a);
-//        d.AddMember("concurrency", msg.concurrency(), a);
-//        if (!msg.message().empty()) {
-//            d.AddMember("message", Value(msg.message().c_str(), msg.message().size(), a).Move(), a);
-//        }
-//        StringBuffer sb;
-//        Writer<StringBuffer> writer(sb);
-//        d.Accept(writer);
-//        return sb.GetString();
-//    }
+    std::string messageToJson(const FunctionRegisterMsg &msg) {
+        Document d;
+        d.SetObject();
+        Document::AllocatorType &a = d.GetAllocator();
+        // Need to be explicit with strings here to make a copy _and_ make sure we
+        // specify the length to include any null-terminators from bytes
+        d.AddMember("funcName", Value(msg.funcname().c_str(), msg.funcname().size(), a).Move(), a);
+        d.AddMember("memSize", msg.memsize(), a);
+        d.AddMember("coreRation", msg.coreration(), a);
+        d.AddMember("concurrency", msg.concurrency(), a);
+        StringBuffer sb;
+        Writer<StringBuffer> writer(sb);
+        d.Accept(writer);
+        return sb.GetString();
+    }
+
+    std::string messageToJson(const FunctionRegisterResponseMsg &msg) {
+        Document d;
+        d.SetObject();
+        Document::AllocatorType &a = d.GetAllocator();
+        // Need to be explicit with strings here to make a copy _and_ make sure we
+        // specify the length to include any null-terminators from bytes
+        d.AddMember("status", msg.status(), a);
+        d.AddMember("funcName", Value(msg.funcname().c_str(), msg.funcname().size(), a).Move(), a);
+        d.AddMember("memSize", msg.memsize(), a);
+        d.AddMember("coreRation", msg.coreration(), a);
+        d.AddMember("concurrency", msg.concurrency(), a);
+        if (!msg.message().empty()) {
+            d.AddMember("message", Value(msg.message().c_str(), msg.message().size(), a).Move(), a);
+        }
+        StringBuffer sb;
+        Writer<StringBuffer> writer(sb);
+        d.Accept(writer);
+        return sb.GetString();
+    }
 
     std::string messageToJson(const Message &msg) {
         Document d;

@@ -97,9 +97,35 @@ namespace RFIT_NS::endpoint {
         return 0;
     }
 
+    void RFITEndpointHandler::getRFTInfo(string &content) {
+        content += "R-F-T List Info:\n";
+        auto rftList = rfit.tp.getRFT();
+        int r_index = 0, f_index = 0;
+        for (const auto &r : rftList.r) {
+            content += r->toString();
+            content += "\n";
+            for (const auto &f:rftList.f[r_index]) {
+                content += "\t";
+                content += f->toString();
+                content += "\n";
+                for (const auto &t:rftList.t[r_index][f_index]) {
+                    content += "\t\t";
+                    content += t->toString();
+                    content += "\n";
+                }
+                f_index++;
+            }
+            r_index++;
+        }
+    }
+
     void RFITEndpointHandler::handleGetRequest(const Http::Request &request, Pistache::Http::ResponseWriter response) {
         assert(request.method() == Http::Method::Get);
-        response.send(Http::Code::Ok, "OK");
+        std::string content;
+        if (request.resource() == "/rft/info") {
+            getRFTInfo(content);
+        }
+        response.send(Http::Code::Ok, content);
     }
 
 }

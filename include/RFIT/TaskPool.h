@@ -21,6 +21,14 @@ namespace RFIT_NS {
 
         void dispatch(T::InvokeEntry &&invokeEntry);
 
+        struct RFT_LIST {
+            std::vector<shared_ptr<R>> r;
+            std::vector<std::vector<shared_ptr<F>>> f;
+            std::vector<std::vector<std::vector<shared_ptr<T>>>> t;
+        };
+
+        RFT_LIST getRFT();
+
     private:
 
         LRU<shared_ptr<R>, uint64_t> R_list;

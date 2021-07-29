@@ -17,6 +17,8 @@ namespace RFIT_NS::utils {
                 : RFIT_NS::utils::RFITException(message) {}
     };
 
+    std::string messageToJson(const FunctionRegisterMsg &msg);
+
     std::string messageToJson(const FunctionRegisterResponseMsg &msg);
 
     std::string messageToJson(const Message &msg);
