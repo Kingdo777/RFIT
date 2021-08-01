@@ -249,8 +249,8 @@ namespace RFIT_NS {
             return "T: {id:" + to_string(id) +
                    ", context:" + context.toString() +
                    ", ICount:" + to_string(ICount) +
-                    ", workCount:" + to_string(workCount) +
-                    ", dispatchCount:" + to_string(dispatchCount) +
+                   ", workCount:" + to_string(workCount) +
+                   ", dispatchCount:" + to_string(dispatchCount) +
                    "}";
         }
 

@@ -59,7 +59,6 @@ namespace RFIT_NS {
                 break;
             //// 如果不是异步执行，那么ICount是没有任何意义的变量 TODO
             ICount++;
-            dispatchCount++;
             workCount++;
             // 配置正确的Cgroup
             assert(adjustResource(invokeEntry->instance));

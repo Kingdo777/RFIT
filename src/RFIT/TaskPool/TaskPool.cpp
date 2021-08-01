@@ -2,7 +2,6 @@
 // Created by kingdo on 2021/7/8.
 //
 
-#include "utils/lru.h"
 #include "utils/locks.h"
 #include "RFIT/TaskPool.h"
 
@@ -36,6 +35,7 @@ namespace RFIT_NS {
             /// 如果是上述三种情况下拿到的T都要进行 f->newT(t)操作
             f->newT(t);
         }
+        t->incDispatchCount();
         lock.unlock();
         t->IQueue.push(std::move(invokeEntry));
     }
