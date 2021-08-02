@@ -134,52 +134,110 @@ namespace RFIT_NS {
     }
 
     void TSortList::putOrUpdate(int increment, const shared_ptr<T> &t) {
+        /// 必须确保increment的值变化不能超过maxValue，因为目前只能操作一个T
+        assert(abs(increment) <= maxValue);
         auto key = t->getID();
         if (map.find(key) == map.end()) {
-            insert(increment, t, l.begin());
-            return;
+            /// 此时需要创建新的T，那么increment必须不能是负数
+            assert(increment >= 0);
+            newT(increment, t);
+        } else {
+            if (0 == increment)
+                return;
+            /// 如果是增加，那么必须是操作nextT
+            assert(increment < 0 || (increment > 0 && t == nextT->second));
+            auto iter = map[key];
+            auto location = iter->first + increment;
+            assert(location >= 0 && location <= maxValue);
+            updateT(location, iter->second);
         }
-        auto item = map[key];
-        if (0 == increment)
-            return;
-        insert(item->first + increment, item->second, item, increment > 0);
-        l.erase(item);
     }
 
-    void
-    TSortList::insert(int count, const shared_ptr<T> &t, std::list<pair<int, shared_ptr<T>>>::iterator begin,
-                      bool back) {
+    void TSortList::newT(int count, const shared_ptr<T> &t) {
         uint64_t key = t->getID();
-        /// 保证count不能是负数
-//        assert(count >= 0);
-        if (count < 0)
-            count = 0;
-        if (l.empty()) {
+        auto iter = map.find(key);
+        assert(iter == map.end());
+        /// 如果仅仅是单纯的创建一个T或者当前不存在nextT
+        if (count == 0 || (count != maxValue && nextT == l.end())) {
+            /// 创建，然后放在队尾
             l.emplace_back(count, t);
             map[key] = --l.end();
-            return;
-        }
-        if (back) {
-            for (auto item = begin; item != l.end(); item++) {
-                if (item->first >= count) {
-                    map[key] = l.insert(item, pair<int, shared_ptr<T>>(count, t));
-                    return;
-                }
-            }
-            l.emplace_back(count, t);
-            map[key] = --l.end();
-        } else {
-            for (auto item = begin; item != l.end();) {
-                if (item->first < count) {
-                    map[key] = l.insert(++item, pair<int, shared_ptr<T>>(count, t));
-                    return;
-                }
-                if (item == l.begin())
-                    break;
-                item--;
-            }
-            l.push_front(pair<int, shared_ptr<T>>(count, t));
+            if (nextT == l.end())
+                nextT = map[key];
+        } else if (count == maxValue) {
+            /// 创建，然后放在队首
+            l.emplace_front(maxValue, t);
             map[key] = l.begin();
+        } else { /// count != maxValue && nextT ！= l.end()
+            if (count > nextT->first) {
+                map[key] = l.insert(nextT, std::pair<int, shared_ptr<T>>(count, t));
+                nextT = map[key];
+            } else {
+                auto i = nextT;
+                for (++i; i != l.end(); ++i) {
+                    if (count >= i->first) {
+                        map[key] = l.insert(i, std::pair<int, shared_ptr<T>>(count, t));
+                        return;
+                    }
+                }
+                l.emplace_back(count, t);
+                map[key] = --l.end();
+            }
+        }
+    }
+
+    void TSortList::updateT(int count, const shared_ptr<T> &t) {
+        uint64_t key = t->getID();
+        auto iter = map.find(key);
+        assert(iter != map.end());
+        if (count == map[key]->first)
+            return;
+        if (iter->second == nextT) {
+            if (count == 0) {
+                l.emplace_back(count, t);
+                map[key] = --l.end();
+                l.erase(nextT++);
+            } else if (count >= map[key]->first) {
+                map[key]->first = count;
+                if (count == maxValue)
+                    ++nextT;
+            } else {
+                auto i = nextT;
+                for (++i; i != l.end(); ++i)
+                    if (count >= i->first) {
+                        map[key] = l.insert(i, std::pair<int, shared_ptr<T>>(count, t));
+                        break;
+                    }
+                if (i == l.end()) {
+                    l.emplace_back(count, t);
+                    map[key] = --l.end();
+                }
+                l.erase(nextT++);
+            }
+        } else {
+            assert(count < map[key]->first);
+            if (nextT == l.end()) {
+                l.emplace_back(count, t);
+                l.erase(map[key]);
+                nextT = map[key] = --l.end();
+            } else {
+                if (count < nextT->first) {
+                    auto i = map[key];
+                    l.erase(i++);
+                    for (; i != l.end(); ++i)
+                        if (count >= i->first) {
+                            map[key] = l.insert(i, std::pair<int, shared_ptr<T>>(count, t));
+                            return;
+                        }
+                    if (i == l.end()) {
+                        l.emplace_back(count, t);
+                        map[key] = --l.end();
+                    }
+                } else {
+                    l.erase(map[key]);
+                    nextT = map[key] = l.insert(nextT, std::pair<int, shared_ptr<T>>(count, t));
+                }
+            }
         }
     }
 
@@ -193,33 +251,30 @@ namespace RFIT_NS {
         utils::UniqueLock lock(mutex);
         if (l.empty())
             return false;
-        auto t_ = l.front();
+        auto t_ = l.back();
         if (t_.first == 0) {
             t = t_.second;
-            l.pop_front();
+            l.pop_back();
             map.erase(t->getID());
             return true;
         }
         return false;
     }
 
-    bool TSortList::takeOne(shared_ptr<T> &t, int maxCount) {
+    bool TSortList::takeOne(shared_ptr<T> &t) {
         utils::UniqueLock lock(mutex);
-        if (l.empty())
+        if (nextT == l.end())
             return false;
-        auto t_ = l.front();
-        if (t_.first < maxCount) {
-            t = t_.second;
-            putOrUpdate(1, t);
-            return true;
-        }
-        return false;
+        assert(nextT->first < maxValue);
+        t = nextT->second;
+        putOrUpdate(1, t);
+        return true;
     }
 
     void TSortList::returnOne(uint64_t key) {
         utils::UniqueLock lock(mutex);
         shared_ptr<T> t;
-        assert(getT(key, t));
+        assert(getTbyKey(key, t));
         putOrUpdate(-1, t);
     }
 

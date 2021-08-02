@@ -298,13 +298,15 @@ namespace RFIT_NS {
 
     class TSortList {
     public:
+        explicit TSortList(uint32_t conc) : maxValue(conc) {}
+
         void returnOne(uint64_t key);
 
         void newOne(const shared_ptr<T> &t, bool take = true);
 
         bool takeIdleOne(shared_ptr<T> &t);
 
-        bool takeOne(shared_ptr<T> &t, int maxCount);
+        bool takeOne(shared_ptr<T> &t);
 
         void shutdown();
 
@@ -315,11 +317,11 @@ namespace RFIT_NS {
     private:
         void putOrUpdate(int increment, const shared_ptr<T> &t);
 
-        void insert(int count, const shared_ptr<T> &t,
-                    std::list<pair<int, shared_ptr<T>>>::iterator begin,
-                    bool back = true);
+        void updateT(int count, const shared_ptr<T> &t);
 
-        bool getT(uint64_t key, shared_ptr<T> &t) {
+        void newT(int count, const shared_ptr<T> &t);
+
+        bool getTbyKey(uint64_t key, shared_ptr<T> &t) {
             if (map.find(key) == map.end())
                 return false;
             t = map[key]->second;
@@ -330,6 +332,9 @@ namespace RFIT_NS {
         std::list<pair<int, shared_ptr<T>>> l;
         /// map记录了数据单元在list中的索引，map的key值即U
         std::unordered_map<uint64_t, std::list<pair<int, shared_ptr<T>>>::iterator> map;
+        /// nextT始终始终指向l中下一个服务请求的T
+        std::list<pair<int, shared_ptr<T>>>::iterator nextT = l.end();
+        int maxValue;
         std::mutex mutex;
     };
 

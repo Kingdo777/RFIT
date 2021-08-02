@@ -108,9 +108,10 @@ namespace RFIT_NS::endpoint {
                 content += "\t";
                 content += f->toString();
                 content += "\n";
+                int i = 1;
                 for (const auto &t:rftList.t[r_index][f_index]) {
                     content += "\t\t";
-                    content += t->toString();
+                    content += (to_string(i++) + ". " + t->toString());
                     content += "\n";
                 }
                 f_index++;

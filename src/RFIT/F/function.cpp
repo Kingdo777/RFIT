@@ -14,7 +14,8 @@ namespace RFIT_NS {
             dr(dr_),
             dlPath(std::move(p)),
             r(std::move(r_)),
-            concurrency(concurrency) {
+            concurrency(concurrency),
+            TList(concurrency) {
     }
 
     void F::invoke(Message &msg) {
@@ -28,7 +29,7 @@ namespace RFIT_NS {
     }
 
     bool F::getT(shared_ptr<T> &t) {
-        return TList.takeOne(t, concurrency);
+        return TList.takeOne(t);
     }
 
     void F::newT(const shared_ptr<T> &t, bool take) {
