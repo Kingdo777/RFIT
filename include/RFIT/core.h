@@ -28,8 +28,8 @@
 #define CPU_DEFAULT_CFS_PERIOD_US 100000
 #define DEFAULT_CPU_RATE 1.0
 
-#define MEM_DEFAULT_SOFT_LIMIT 256
-#define MEM_DEFAULT_HARD_LIMIT 256
+#define MEM_DEFAULT_HARD_LIMIT (256*1024*1024)
+#define MEM_DEFAULT_SOFT_LIMIT MEM_DEFAULT_HARD_LIMIT
 using namespace std;
 using namespace Pistache;
 namespace RFIT_NS {
@@ -44,6 +44,8 @@ namespace RFIT_NS {
 
 
     struct CpuResource {
+        friend class CGroup;
+
     public:
         CpuResource() :
                 impl(Impl()) {};
@@ -81,6 +83,8 @@ namespace RFIT_NS {
     };
 
     struct MemResource {
+        friend class CGroup;
+
     public:
         MemResource() :
                 impl(Impl()) {};
@@ -118,6 +122,9 @@ namespace RFIT_NS {
     };
 
     struct Resource {
+        friend class CGroup;
+
+    public:
         Resource() :
                 impl(Impl()) {};
 
@@ -147,6 +154,8 @@ namespace RFIT_NS {
     class R {
         friend class F;
 
+        friend class T;
+
         friend class RFIT;
 
     public:
@@ -170,6 +179,31 @@ namespace RFIT_NS {
         LRU<shared_ptr<F>, string> F_list;
     };
 
+
+#define BASE_CGROUP_DIR  "/sys/fs/cgroup/"
+#define BASE_CGROUP_NAME "RFIT"
+#define CG_CPU  "cpu"
+#define CG_MEM  "memory"
+
+    class CGroup {
+    public:
+        void addCurrentThread();
+
+        void changeConfig(const Resource &res);
+
+        void setName(std::string name_);
+
+        void destroy();
+
+    private:
+        std::string name;
+        uint64_t cpu_hash = 0;
+        uint64_t mem_hash = 0;
+
+        static void changeCPUCGConfig(const CpuResource &res, boost::filesystem::path &confPath);
+
+        static void changeMemCGConfig(const MemResource &res, boost::filesystem::path &confPath);
+    };
 
     typedef void (*FuncType)(Message &);
 
@@ -218,6 +252,16 @@ namespace RFIT_NS {
                 oss << tid;
                 return "{tid:" + oss.str() + "}";
             }
+
+            string getTID_s() {
+                std::ostringstream oss;
+                oss << tid;
+                return oss.str();
+            };
+
+            std::thread::id getTID() {
+                return tid;
+            };
 
         private:
             std::thread::id tid;
@@ -275,6 +319,8 @@ namespace RFIT_NS {
         std::atomic<bool> shutdown_;
         NotifyFd shutdownFd;
         thread t;
+
+        CGroup cg;
     private:
         void handleFds(const std::vector<Polling::Event> &events);
 

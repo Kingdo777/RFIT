@@ -3,6 +3,7 @@
 //
 
 #include "utils/locks.h"
+#include "utils/timing.h"
 #include "RFIT/TaskPool.h"
 
 namespace RFIT_NS {
@@ -21,6 +22,7 @@ namespace RFIT_NS {
     }
 
     void TaskPool::dispatch(T::InvokeEntry &&invokeEntry) {
+        PROF_START(T_dispatch)
         auto r = invokeEntry.instance->getR();
         auto f = invokeEntry.instance->getF();
         R_list.access(r, r->getHash());
@@ -38,6 +40,7 @@ namespace RFIT_NS {
         t->incDispatchCount();
         lock.unlock();
         t->IQueue.push(std::move(invokeEntry));
+        PROF_END(T_dispatch)
     }
 
     bool TaskPool::getTFromOtherFInSameR(const shared_ptr<F> &selfF, shared_ptr<T> &t) {
@@ -70,12 +73,13 @@ namespace RFIT_NS {
         RFT_LIST rftList;
         utils::UniqueLock lock(mutex);
         auto Rs = R_list.getSortedItem();
-        int i_r = 0, i_f = 0;
+        int i_r = 0;
         for (const auto &r:Rs) {
             rftList.r.push_back(r);
             rftList.f.emplace_back();
             rftList.t.emplace_back();
             auto Fs = r->getFList().getSortedItem();
+            int i_f = 0;
             for (const auto &f:Fs) {
                 rftList.f[i_r].push_back(f);
                 rftList.t[i_r].emplace_back();

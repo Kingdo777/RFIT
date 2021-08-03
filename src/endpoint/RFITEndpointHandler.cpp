@@ -75,9 +75,11 @@ namespace RFIT_NS::endpoint {
             }
             uint32_t mem = strtoul(para[4].data(), nullptr, 10);
             if (mem > 0) {
-                mem += 16;
-                mem %= config.memAllocGranularity;
-                msg.set_memsize(mem);
+                if (mem % 16)
+                    mem += 16;
+                mem /= config.memAllocGranularity;
+                mem *= config.memAllocGranularity;
+                msg.set_memsize(mem * 1024 * 1024);
             }
         }
         return 0;
@@ -100,10 +102,11 @@ namespace RFIT_NS::endpoint {
     void RFITEndpointHandler::getRFTInfo(string &content) {
         content += "R-F-T List Info:\n";
         auto rftList = rfit.tp.getRFT();
-        int r_index = 0, f_index = 0;
+        int r_index = 0;
         for (const auto &r : rftList.r) {
             content += r->toString();
             content += "\n";
+            int f_index = 0;
             for (const auto &f:rftList.f[r_index]) {
                 content += "\t";
                 content += f->toString();

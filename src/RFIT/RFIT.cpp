@@ -69,7 +69,7 @@ namespace RFIT_NS {
             close_remove_DL(p, dl.handle);
             return pair<bool, string>(false, "Ping Failed");
         }
-        CpuResource cr(CPU_DEFAULT_SHARES,
+        CpuResource cr(CPU_DEFAULT_SHARES * (int(msg.coreration() * 10)),
                        (uint64_t) (msg.coreration() * CPU_DEFAULT_CFS_PERIOD_US),
                        CPU_DEFAULT_CFS_PERIOD_US);
         MemResource mr(msg.memsize(), msg.memsize());

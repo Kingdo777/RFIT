@@ -17,7 +17,6 @@ namespace RFIT_NS {
     }
 
     void T::run() {
-        context.set();
         for (;;) {
             std::vector<Polling::Event> events;
             int ready_fds = poller.poll(events);
@@ -37,10 +36,14 @@ namespace RFIT_NS {
              poller(),
              IQueue(),
              shutdown_(false),
-             shutdownFd() {
+             shutdownFd(),
+             cg() {
         IQueue.bind(poller);
         shutdownFd.bind(poller);
         t = thread([this] {
+            context.set();
+            cg.setName(context.getTID_s());
+            cg.addCurrentThread();
             run();
         });
 
@@ -50,6 +53,7 @@ namespace RFIT_NS {
         shutdown_.store(true);
         shutdownFd.notify();
         t.join();
+        cg.destroy();
     }
 
     void T::handleIQueue() {
@@ -57,11 +61,11 @@ namespace RFIT_NS {
             shared_ptr<InvokeEntry> invokeEntry = IQueue.popSafe();
             if (!invokeEntry)
                 break;
+            // 配置正确的Cgroup
+            assert(adjustResource(invokeEntry->instance));
             //// 如果不是异步执行，那么ICount是没有任何意义的变量 TODO
             ICount++;
             workCount++;
-            // 配置正确的Cgroup
-            assert(adjustResource(invokeEntry->instance));
             doExecute(invokeEntry);
         }
     }
@@ -71,13 +75,13 @@ namespace RFIT_NS {
         if (!checkI(instance) ||
             (currentResource && currentResource->getHash() == instance->r->getHash()))
             return true;
-        auto newResource = instance->r;
-        currentResource = newResource;
+        currentResource = instance->r;
         return changeCgroup();
     }
 
     /// 切换线程所在的 Cgroup
     bool T::changeCgroup() {
+        cg.changeConfig(currentResource->resource);
         return true;
     }
 
@@ -121,7 +125,7 @@ namespace RFIT_NS {
 
 
     void T::doClean() {
-
+        // TODO
     }
 
     void T::doLog(const shared_ptr<InvokeEntry> &invokeEntry) {
@@ -253,6 +257,8 @@ namespace RFIT_NS {
             return false;
         auto t_ = l.back();
         if (t_.first == 0) {
+            if (nextT->second == t_.second)
+                nextT = l.end();
             t = t_.second;
             l.pop_back();
             map.erase(t->getID());
