@@ -5,21 +5,21 @@
 #include <RFIT/core.h>
 
 #include <utility>
+#include <WAVM/Runtime/Runtime.h>
 
 
 namespace RFIT_NS {
-    F::F(string funcName_, shared_ptr<R> r_, utils::dlResult dr_, boost::filesystem::path p,
+    F::F(string funcName_,
+         shared_ptr<R> r_,
          uint32_t concurrency) :
             funcName(std::move(funcName_)),
-            dr(dr_),
-            dlPath(std::move(p)),
             r(std::move(r_)),
             concurrency(concurrency),
             TList(concurrency) {
     }
 
     void F::invoke(Message &msg) {
-        auto func = (FuncType) (dr.addr);
+        auto func = (FuncType) (native.dr.addr);
         msg.set_isping(false);
         func(msg);
     }

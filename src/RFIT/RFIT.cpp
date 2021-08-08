@@ -2,6 +2,7 @@
 // Created by kingdo on 2021/7/8.
 //
 
+#include <WAVM/WASM/WASM.h>
 #include "RFIT/RFIT.h"
 
 namespace RFIT_NS {
@@ -56,44 +57,7 @@ namespace RFIT_NS {
         return RMap[res.getHash()];
     }
 
-    bool pingFunc(FuncType func) {
-        Message m{};
-        m.set_isping(true);
-        func(m);
-        return m.outputdata() == "PONG";
-    }
-
-    pair<bool, string>
-    RFIT::registerF(FunctionRegisterMsg &msg, dlResult &dl, const boost::filesystem::path &p) {
-        if (!pingFunc((FuncType) dl.addr)) {
-            close_remove_DL(p, dl.handle);
-            return pair<bool, string>(false, "Ping Failed");
-        }
-        CpuResource cr(CPU_DEFAULT_SHARES * (int(msg.coreration() * 10)),
-                       (uint64_t) (msg.coreration() * CPU_DEFAULT_CFS_PERIOD_US),
-                       CPU_DEFAULT_CFS_PERIOD_US);
-        MemResource mr(msg.memsize(), msg.memsize());
-        Resource resource(cr, mr);
-        auto r = createR(resource);
-        auto f = make_shared<F>(msg.funcname(), r, dl, p, msg.concurrency());
-        FMap.emplace(f->getFuncName(), f);
-        return pair<bool, string>(true, "OK");
-    }
-
-    void
-    makeFuncRegisterResponseMsg(const FunctionRegisterMsg &msg,
-                                FunctionRegisterResponseMsg &responseMsg,
-                                bool status = true,
-                                const string &message = "OK") {
-        responseMsg.set_funcname(msg.funcname());
-        responseMsg.set_concurrency(msg.concurrency());
-        responseMsg.set_coreration(msg.coreration());
-        responseMsg.set_memsize(msg.memsize());
-        responseMsg.set_status(status);
-        responseMsg.set_message(message);
-    }
-
-    void sendResponse(const FunctionRegisterResponseMsg &m, const shared_ptr<RFIT::FunctionRegisterEntry> &func) {
+    void sendResponse(const FunctionRegisterMsg &m, const shared_ptr<RFIT::FunctionRegisterEntry> &func) {
         if (m.status()) {
             func->response.send(Pistache::Http::Code::Ok, "OK");
         } else {
@@ -102,41 +66,125 @@ namespace RFIT_NS {
         func->deferred.resolve();
     }
 
+    bool pingFunc(FuncType func) {
+        Message m{};
+        m.set_isping(true);
+        func(m);
+        return m.outputdata() == "PONG";
+    }
+
+    void
+    RFIT::registerF(FunctionRegisterMsg &msg, dlResult &dl, const boost::filesystem::path &p) {
+        if (!pingFunc((FuncType) dl.addr)) {
+            close_remove_DL(p, dl.handle);
+            msg.set_status(false);
+            msg.set_message("Ping Failed");
+        }
+        CpuResource cr(CPU_DEFAULT_SHARES * (int(msg.coreration() * 10)),
+                       (uint64_t) (msg.coreration() * CPU_DEFAULT_CFS_PERIOD_US),
+                       CPU_DEFAULT_CFS_PERIOD_US);
+        MemResource mr(msg.memsize(), msg.memsize());
+        Resource resource(cr, mr);
+        auto r = createR(resource);
+        auto f = make_shared<F>(msg.funcname(), r, msg.concurrency());
+        f->setDL(dl);
+        FMap.emplace(f->getFuncName(), f);
+        msg.set_status(true);
+        msg.set_message("OK");
+    }
+
+    void RFIT::handleNativeFuncRegister(const shared_ptr<FunctionRegisterEntry> &func) {
+        const string &dlPath = utils::makeDL(func->msg.funcname(),
+                                             func->msg.dldata().c_str(),
+                                             func->msg.dldata().size());
+        pair<dlResult, std::string> res = utils::getFuncEntry(dlPath,
+                                                              func->msg.funcname() + config.entrySuffix);
+        if (res.first.handle == nullptr || res.first.addr == nullptr || !res.second.empty()) {
+            const string &message = res.second.empty() ? (func->msg.funcname() + "_main" + "is NULL type")
+                                                       : res.second;
+            func->msg.set_status(false);
+            func->msg.set_message(message);
+        } else {
+            registerF(func->msg, res.first, dlPath);
+        }
+        sendResponse(func->msg, func);
+    }
+
+
+    void
+    RFIT::registerF(FunctionRegisterMsg &msg, WAVM::Runtime::ModuleRef &module) {
+        if (false) {
+            msg.set_status(false);
+            msg.set_message("Ping Failed");
+        }
+        CpuResource cr(CPU_DEFAULT_SHARES * (int(msg.coreration() * 10)),
+                       (uint64_t) (msg.coreration() * CPU_DEFAULT_CFS_PERIOD_US),
+                       CPU_DEFAULT_CFS_PERIOD_US);
+        MemResource mr(msg.memsize(), msg.memsize());
+        Resource resource(cr, mr);
+        auto r = createR(resource);
+        auto f = make_shared<F>(msg.funcname(), r, msg.concurrency());
+        f->setWASM(module);
+        FMap.emplace(f->getFuncName(), f);
+        msg.set_status(true);
+        msg.set_message("OK");
+    }
+
+    /// 1、检查是wasm二进制文件
+    /// 2、检查hash值  #TODO
+    /// 3、写入到指定的路径: PRO_ROOT/Function/wasm/function/##name##/function.wasm
+    /// 4、编译，并存储到执行路径： PRO_ROOT/Function/wasm/function/##name##/function.wasm.o
+    /// 5、注册F
+    void RFIT::handleWasmFuncRegister(const shared_ptr<FunctionRegisterEntry> &func) {
+        //// 写入wasm文件
+        const std::string &fileBody = func->msg.dldata();
+        assert(!fileBody.empty());
+        assert(utils::isWasm(fileBody));
+        auto wasmFile = PRO_ROOT"/Function/wasm/function/" + func->msg.funcname() + "/function.wasm";
+        writeStringToFile(wasmFile, fileBody);
+
+        //// 生成Module，并将obj写入文件
+        WAVM::IR::Module moduleIR;
+        moduleIR.featureSpec.simd = true;
+        WAVM::WASM::LoadError loadError;
+        if (!WAVM::WASM::loadBinaryModule(reinterpret_cast<const WAVM::U8 *>(fileBody.data()), fileBody.size(),
+                                          moduleIR, &loadError))
+            throw std::runtime_error("Failed to parse wasm binary");
+        // Compile the module to object code
+        WAVM::Runtime::ModuleRef module = WAVM::Runtime::compileModule(moduleIR);
+        std::vector<uint8_t> objBytes = WAVM::Runtime::getObjectCode(module);
+        auto wasmObjFile = PRO_ROOT"/Function/wasm/object/" + func->msg.funcname() + "/function.wasm.o";
+        writeBytesToFile(wasmObjFile, objBytes);
+
+        //// 注册F
+        registerF(func->msg, module);
+        sendResponse(func->msg, func);
+    }
+
     void RFIT::handlerFuncRegisterQueue() {
         for (;;) {
             shared_ptr<FunctionRegisterEntry> func = funcRegisterQueue.popSafe();
             if (!func)
                 break;
-
             if (existF(func->msg.funcname())) {
                 func->response.send(Pistache::Http::Code::Bad_Request,
                                     "Register Failed:" + func->msg.funcname() + " is exist!");
                 func->deferred.resolve();
-                break;
+                continue;
             }
-            FunctionRegisterResponseMsg msg;
             try {
-                const string &dlPath = utils::makeDL(func->msg.funcname(),
-                                                     func->msg.dldata().c_str(),
-                                                     func->msg.dldata().size());
-                pair<dlResult, std::string> res = utils::getFuncEntry(dlPath,
-                                                                      func->msg.funcname() + config.entrySuffix);
-                if (res.first.handle == nullptr || res.first.addr == nullptr || !res.second.empty()) {
-                    const string &message = res.second.empty() ? (func->msg.funcname() + "_main" + "is NULL type")
-                                                               : res.second;
-                    makeFuncRegisterResponseMsg(func->msg, msg, false, message);
+                if (func->isWasm()) {
+                    handleWasmFuncRegister(func);
                 } else {
-                    auto info = registerF(func->msg, res.first, dlPath);
-                    makeFuncRegisterResponseMsg(func->msg, msg, info.first, info.second);
+                    handleNativeFuncRegister(func);
                 }
-                sendResponse(msg, func);
             } catch (exception &e) {
                 string s;
                 if (e.what() != nullptr)
                     s = e.what();
                 func->response.send(Pistache::Http::Code::Bad_Request,
                                     "Register Wrong: " + s);
-                func->deferred.reject(s);
+                func->deferred.reject(e);
             }
         }
     }

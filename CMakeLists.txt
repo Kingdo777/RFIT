@@ -30,12 +30,15 @@ if (OPEN_TRACE)
     add_definitions(-DOPEN_TRACE)
 endif ()
 add_definitions(-DWAVM_API=)
+add_definitions(-DPRO_ROOT="/home/kingdo/CLionProjects/RFIT")
 
 include(cmake/ExternalProjects.cmake)
 
 include_directories(
         ${RFIT_INCLUDE_DIR}
         ${PISTACHE_SOURCE_DIR}/include
+        ${WAVM_SOURCE_DIR}/Include
+        ${WAVM_SOURCE_DIR}/Lib
         ${RAPIDJSON_INCLUDE_DIR}
 )
 
@@ -43,7 +46,10 @@ add_subdirectory(src/utils)
 add_subdirectory(src/endpoint)
 add_subdirectory(src/RFIT)
 add_subdirectory(src/proto)
-add_subdirectory(Function)
+#add_subdirectory(src/ir_cache)
+#add_subdirectory(src/wasm)
+#add_subdirectory(src/wavm)
+#add_subdirectory(Function)
 
 add_executable(main src/main.cpp)
 target_link_libraries(main utils endpoint RFIT)

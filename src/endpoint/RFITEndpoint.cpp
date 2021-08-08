@@ -5,7 +5,6 @@
 #include <csignal>
 #include "endpoint/RFITEndpoint.h"
 #include "endpoint/RFITEndpointHandler.h"
-#include "utils//logging.h"
 
 namespace RFIT_NS::endpoint {
     void RFITEndpoint::start() const {

@@ -6,12 +6,14 @@
 #define RFIT_CORE_H
 
 #include <WAVM/Inline/HashMap.h>
+#include <WAVM/Runtime/Runtime.h>
 #include <pistache/async.h>
 #include <pistache/http.h>
 #include <utils/locks.h>
 #include <utils/queue.h>
 #include <utils/lru.h>
 #include <utils/gids.h>
+#include <utils/files.h>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -386,23 +388,20 @@ namespace RFIT_NS {
 
     class F {
     public:
-
         friend class T;
 
         F() = delete;
 
-        explicit F(string funcName_,
-                   shared_ptr<R> r_,
-                   utils::dlResult dr_,
-                   boost::filesystem::path p,
-                   uint32_t concurrency = 1);;
+        F(string funcName_,
+          shared_ptr<R> r_,
+          uint32_t concurrency = 1);
 
         [[nodiscard]] const string &getFuncName() const {
             return funcName;
         }
 
         [[nodiscard]] const dlResult &getDr() const {
-            return dr;
+            return native.dr;
         }
 
         [[nodiscard]] const shared_ptr<R> &getR() const {
@@ -417,6 +416,8 @@ namespace RFIT_NS {
             return concurrency > 1;
         }
 
+        bool isWasm() const { return isWasm_; }
+
         void invoke(Message &msg);
 
         bool getIdleT(shared_ptr<T> &t);
@@ -430,18 +431,49 @@ namespace RFIT_NS {
 
         std::vector<shared_ptr<T>> getAllT();
 
+        void setDL(utils::dlResult dr_) {
+            native.dr = dr_;
+            isWasm_ = false;
+        }
+
+        void setWASM(WAVM::Runtime::ModuleRef module_) {
+            wasm.module = std::move(module_);
+            isWasm_ = true;
+        }
+
+        string getPath() {
+            if (!isWasm_)
+                return PRO_ROOT "/Function/lib/" + funcName + "/function.so";
+            else
+                return PRO_ROOT "/Function/wasm/function/" + funcName + "/function.wasm";
+        };
+
+        string getOBJPath() {
+            if (!isWasm_)
+                return "";
+            else
+                return PRO_ROOT "/Function/wasm/object/" + funcName + "/function.wasm.o";
+        };
+
         string toString() {
-            return "F: {funcName:" + funcName + ", conc:" + to_string(concurrency) + ", dlPath:" + dlPath.string() +
-                   "}";
+                return "F: {funcName:" + funcName + ", conc:" + to_string(concurrency) + ", dlPath:" +
+                       getPath() +
+                       "}";
         }
 
     private:
 
         string funcName;
 
-        utils::dlResult dr;
+        bool isWasm_ = false;
 
-        boost::filesystem::path dlPath;
+        struct {
+            utils::dlResult dr;
+        } native;
+
+        struct {
+            WAVM::Runtime::ModuleRef module;
+        } wasm;
 
         shared_ptr<R> r;
 

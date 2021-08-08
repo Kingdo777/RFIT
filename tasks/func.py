@@ -72,7 +72,7 @@ def register(ctx, func, concurrency, core=0, mem=0):
     if func == "hello1":
         core = 0.5
         mem = 128
-    url = "http://localhost:8080/register/{}/{}/{}/{}".format(func, concurrency, core, mem)
+    url = "http://localhost:8080/register/native/{}/{}/{}/{}".format(func, concurrency, core, mem)
     response = requests.put(url, data=open(func_file, "rb"))
     print("Response {}: {}".format(response.status_code, response.text))
 

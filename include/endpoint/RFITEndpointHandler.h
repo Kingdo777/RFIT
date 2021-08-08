@@ -5,7 +5,6 @@
 #ifndef RFIT_RFIT_ENDPOINT_HANDLER_H
 #define RFIT_RFIT_ENDPOINT_HANDLER_H
 
-#include <pistache/http.h>
 #include <utils/environment.h>
 #include "RFIT/RFIT.h"
 #include "proto/rfit.pb.h"

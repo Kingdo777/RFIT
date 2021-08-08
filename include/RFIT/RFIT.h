@@ -5,10 +5,8 @@
 #ifndef RFIT_RFIT_H
 #define RFIT_RFIT_H
 
-#include <pistache/http.h>
-#include <pistache/mailbox.h>
-#include <pistache/async.h>
-#include <pistache/os.h>
+#include <WAVM/IR/Module.h>
+#include <WAVM/Runtime/Runtime.h>
 #include <utility>
 #include "TaskPool.h"
 #include "utils/config.h"
@@ -53,6 +51,10 @@ namespace RFIT_NS {
             Pistache::Async::Deferred<void> deferred;
             FunctionRegisterMsg msg;
             Pistache::Http::ResponseWriter response;
+        public:
+            bool isWasm() const {
+                return msg.type() == "wasm";
+            }
         };
 
         Pistache::Polling::Epoll poller;
@@ -76,14 +78,19 @@ namespace RFIT_NS {
 
         shared_ptr<R> createR(Resource r);
 
-        pair<bool, string> registerF(FunctionRegisterMsg &msg, dlResult &dl, const boost::filesystem::path &p);
+        void registerF(FunctionRegisterMsg &msg, dlResult &dl, const boost::filesystem::path &p);
+
+        void registerF(FunctionRegisterMsg &msg, WAVM::Runtime::ModuleRef &module);
+
+        void handleNativeFuncRegister(const shared_ptr<FunctionRegisterEntry> &func);
+
+        void handleWasmFuncRegister(const shared_ptr<FunctionRegisterEntry> &func);
 
         void handlerFuncRegisterQueue();
 
         shared_ptr<F> getF(const string &funcName);
 
         bool existF(const string &funcName);
-
     };
 
     RFIT &getRFIT();

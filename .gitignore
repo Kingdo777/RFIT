@@ -4,6 +4,10 @@ cmake-build-debug/
 venv/
 *build/
 test/
+
+Function/lib
+Function/wasm
+
 *.so
 *.pb.h
 *.pb.cc

@@ -46,34 +46,47 @@ namespace RFIT_NS::endpoint {
                 .then([=](ssize_t) {}, PrintException());
     }
 
+    enum RegisterPara {
+        register_rp = 0,
+        type_rp = 1,
+        functionName_rp = 2,
+        concurrency_rp = 3,
+        core_rp = 4,
+        mem_rp = 4,
+    };
+
     int
     RFITEndpointHandler::requestToMsg(const Http::Request &request, FunctionRegisterMsg &msg) const {
-        // 标准格式 ： /register/functionName/concurrency/core/mem
+        // 标准格式 ： /register/type/functionName/concurrency/core/mem
+        // type 只能是native或者是wasm
         // concurrency 正整数 1表示不并发，大于1表示并发度
         // core 正整数 表示对CPU占用的百分比(可以大于100%)
         // mem  正整数 是16的正倍数，表示内存占用
         // CPU/MEM 都是硬限制
         vector<string> para;
         utils::split(request.resource(), para, "/");
-        if (!((para.size() == 2 || para.size() == 3 || para.size() == 5) && para[0] == "register"))
+        if (!((para.size() == 3 || para.size() == 4 || para.size() == 6) &&
+              para[register_rp] == "register") &&
+            (para[type_rp] == "native" || para[type_rp] == "wasm"))
             return -1;
-        msg.set_funcname(std::move(para[1]));
+        msg.set_type(para[type_rp]);
+        msg.set_funcname(std::move(para[functionName_rp]));
         msg.set_concurrency(1);
         msg.set_coreration(DEFAULT_CPU_RATE);
         msg.set_memsize(MEM_DEFAULT_HARD_LIMIT);
         msg.set_dldata(request.body());
-        if (para.size() > 2) {
-            uint32_t concurrency = strtoul(para[2].data(), nullptr, 10);
+        if (para.size() > 3) {
+            uint32_t concurrency = strtoul(para[concurrency_rp].data(), nullptr, 10);
             concurrency = concurrency > config.maxFuncConcurrency ? config.maxFuncConcurrency : concurrency;
             msg.set_concurrency(concurrency == 0 ? 1 : concurrency);
         }
-        if (para.size() > 3) {
-            double core = strtod(para[3].data(), nullptr);
+        if (para.size() > 4) {
+            double core = strtod(para[core_rp].data(), nullptr);
             if (core > 0) {
                 core = core > getAllCores() ? getAllCores() : core;
                 msg.set_coreration(core);
             }
-            uint32_t mem = strtoul(para[4].data(), nullptr, 10);
+            uint32_t mem = strtoul(para[mem_rp].data(), nullptr, 10);
             if (mem > 0) {
                 if (mem % 16)
                     mem += 16;

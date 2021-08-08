@@ -6,7 +6,6 @@
 #define RFIT_RFIT_ENDPOINT_H
 
 #include <pistache/endpoint.h>
-#include "RFIT/RFIT.h"
 #include "utils/config.h"
 
 namespace RFIT_NS::endpoint {

@@ -14,6 +14,8 @@
 
 namespace RFIT_NS::utils {
     struct dlResult {
+        dlResult() : handle(nullptr), addr(nullptr) {}
+
         void *handle;
         void *addr;
     };

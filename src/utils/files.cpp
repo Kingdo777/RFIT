@@ -9,15 +9,17 @@
 
 namespace RFIT_NS::utils {
     std::string readFileToString(const std::string &path) {
+        assert(boost::filesystem::exists(path));
+
         std::ifstream stream(path);
         std::stringstream buffer;
         buffer << stream.rdbuf();
         buffer.flush();
-
         return buffer.str();
     }
 
     std::vector<uint8_t> readFileToBytes(const std::string &path) {
+        assert(boost::filesystem::exists(path));
         std::ifstream file(path, std::ios::binary);
 
         // Stop eating new lines in binary mode
@@ -40,24 +42,26 @@ namespace RFIT_NS::utils {
         return result;
     }
 
-
-    void writeBytesToFile(const std::string &path, const std::vector<uint8_t> &data) {
+    void doWrite(const boost::filesystem::path &path, char *data, size_t size) {
+        if (!boost::filesystem::exists(path.parent_path()))
+            boost::filesystem::create_directories(path.parent_path());
         std::ofstream outfile;
         outfile.open(path, std::ios::out | std::ios::binary);
-
         if (!outfile.is_open()) {
-            throw std::runtime_error("Could not write to file " + path);
+            throw std::runtime_error("Could not write to file " + path.string());
         }
-
-        outfile.write((char *) data.data(), data.size());
-
+        outfile.write((char *) data, size);
         outfile.close();
     }
 
-    size_t writeDataCallback(void *ptr, size_t size, size_t nmemb, void *stream) {
-        std::string data((const char *) ptr, (size_t) size * nmemb);
-        *((std::stringstream *) stream) << data;
-        return size * nmemb;
+    void writeBytesToFile(const boost::filesystem::path &path,
+                          const std::vector<uint8_t> &data) {
+        doWrite(path, (char *) data.data(), data.size());
+    }
+
+    void writeStringToFile(const boost::filesystem::path &path,
+                           const std::string &data) {
+        doWrite(path, (char *) data.data(), data.size());
     }
 
     bool isWasm(const std::vector<uint8_t> &bytes) {
@@ -67,5 +71,23 @@ namespace RFIT_NS::utils {
         } else {
             return false;
         }
+    }
+
+    bool isWasm(const std::string &file) {
+        static const uint8_t wasmMagicNumber[4] = {0x00, 0x61, 0x73, 0x6d};
+        if (file.size() >= 4 && !memcmp(file.data(), wasmMagicNumber, 4)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    std::vector<uint8_t> hashBytes(const std::vector<uint8_t> &bytes) {
+        std::vector<uint8_t> result(MD5_DIGEST_LENGTH);
+        MD5(reinterpret_cast<const unsigned char *>(bytes.data()),
+            bytes.size(),
+            result.data());
+
+        return result;
     }
 }

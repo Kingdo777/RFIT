@@ -19,8 +19,6 @@ namespace RFIT_NS::utils {
 
     std::string messageToJson(const FunctionRegisterMsg &msg);
 
-    std::string messageToJson(const FunctionRegisterResponseMsg &msg);
-
     std::string messageToJson(const Message &msg);
 
 
