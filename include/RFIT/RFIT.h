@@ -88,9 +88,9 @@ namespace RFIT_NS {
 
         void handlerFuncRegisterQueue();
 
-        shared_ptr<F> getF(const string &funcName);
+        shared_ptr<F> getF(const string &funcStr);
 
-        bool existF(const string &funcName);
+        bool existF(const string &funcStr);
     };
 
     RFIT &getRFIT();

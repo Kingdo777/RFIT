@@ -53,7 +53,7 @@ def compile(ctx, func, clean=False, debug=False):
     func_cmake(FUNC_DIR, FUNC_BUILD_DIR, func, clean, debug)
 
 
-# /register/functionName/concurrency/core/mem
+# /register/type/user/functionName/concurrency/core/mem
 @task(default=True)
 def register(ctx, func, concurrency, core=0, mem=0):
     """
@@ -72,7 +72,7 @@ def register(ctx, func, concurrency, core=0, mem=0):
     if func == "hello1":
         core = 0.5
         mem = 128
-    url = "http://localhost:8080/register/native/{}/{}/{}/{}".format(func, concurrency, core, mem)
+    url = "http://localhost:8080/register/native/kingdo/{}/{}/{}/{}".format(func, concurrency, core, mem)
     response = requests.put(url, data=open(func_file, "rb"))
     print("Response {}: {}".format(response.status_code, response.text))
 
@@ -89,7 +89,7 @@ def invoke(ctx, func):
 
 @task()
 def hey(ctx, func, n, c):
-    url = "http://localhost:8080/invoke/{}".format(func)
+    url = "http://localhost:8080/invoke/kingdo/{}".format(func)
     cmd = "hey -n {} -c {} -m POST -t 0 -d ".format(n, c) + "\"{\"name\": \"Kingdo\"}\" " + url
     print(cmd)
     res = run(cmd, shell=True)

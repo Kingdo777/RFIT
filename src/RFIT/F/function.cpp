@@ -9,19 +9,53 @@
 
 
 namespace RFIT_NS {
-    F::F(string funcName_,
+    F::F(string user_,
+         string funcName_,
          shared_ptr<R> r_,
          uint32_t concurrency) :
+            user(std::move(user_)),
             funcName(std::move(funcName_)),
             r(std::move(r_)),
             concurrency(concurrency),
             TList(concurrency) {
     }
 
+    F::F(string user_,
+         string funcName_,
+         shared_ptr<R> r_,
+         utils::dlResult dr_,
+         uint32_t concurrency) :
+            user(std::move(user_)),
+            funcName(std::move(funcName_)),
+            native({dr_}),
+            r(std::move(r_)),
+            concurrency(concurrency),
+            TList(concurrency) {
+        isWasm_ = false;
+    }
+
+    F::F(string user_,
+         string funcName_,
+         shared_ptr<R> r_,
+         const WAVM::Runtime::ModuleRef &module_,
+         uint32_t concurrency
+    ) :
+            user(std::move(user_)),
+            funcName(std::move(funcName_)),
+            wasm({wasm::WAVMWasmModule(user, funcName, module_)}),
+            r(std::move(r_)),
+            concurrency(concurrency),
+            TList(concurrency) {
+        isWasm_ = true;
+    }
+
     void F::invoke(Message &msg) {
-        auto func = (FuncType) (native.dr.addr);
         msg.set_isping(false);
-        func(msg);
+        if (!isWasm_) {
+            ((FuncType) (native.dr.addr))(msg);
+        } else {
+            wasm.module.execute(msg);
+        }
     }
 
     bool F::getIdleT(shared_ptr<T> &t) {
@@ -45,4 +79,17 @@ namespace RFIT_NS {
         return TList.getSortedItem();
     }
 
+    bool F::pingFunc() {
+        Message m{};
+        m.set_user(user);
+        m.set_funcname(funcName);
+        m.set_isping(true);
+        if (!isWasm_) {
+            ((FuncType) native.dr.addr)(m);
+            return m.outputdata() == "PONG";
+        } else {
+            m.set_funcptr("_rfit_ping_func");
+            return wasm.module.execute(m);
+        }
+    }
 }

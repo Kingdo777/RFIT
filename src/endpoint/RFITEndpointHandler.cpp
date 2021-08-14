@@ -48,16 +48,18 @@ namespace RFIT_NS::endpoint {
 
     enum RegisterPara {
         register_rp = 0,
-        type_rp = 1,
-        functionName_rp = 2,
-        concurrency_rp = 3,
-        core_rp = 4,
-        mem_rp = 4,
+        type_rp,
+        user_rp,
+        functionName_rp,
+        concurrency_rp,
+        core_rp,
+        mem_rp,
+        RegisterParaSize
     };
 
     int
     RFITEndpointHandler::requestToMsg(const Http::Request &request, FunctionRegisterMsg &msg) const {
-        // 标准格式 ： /register/type/functionName/concurrency/core/mem
+        // 标准格式 ： /register/type/user/functionName/concurrency/core/mem
         // type 只能是native或者是wasm
         // concurrency 正整数 1表示不并发，大于1表示并发度
         // core 正整数 表示对CPU占用的百分比(可以大于100%)
@@ -65,22 +67,23 @@ namespace RFIT_NS::endpoint {
         // CPU/MEM 都是硬限制
         vector<string> para;
         utils::split(request.resource(), para, "/");
-        if (!((para.size() == 3 || para.size() == 4 || para.size() == 6) &&
+        if (!((para.size() == 4 || para.size() == 5 || para.size() == 7) &&
               para[register_rp] == "register") &&
             (para[type_rp] == "native" || para[type_rp] == "wasm"))
             return -1;
         msg.set_type(para[type_rp]);
+        msg.set_user(para[user_rp]);
         msg.set_funcname(std::move(para[functionName_rp]));
         msg.set_concurrency(1);
         msg.set_coreration(DEFAULT_CPU_RATE);
         msg.set_memsize(MEM_DEFAULT_HARD_LIMIT);
         msg.set_dldata(request.body());
-        if (para.size() > 3) {
+        if (para.size() > 4) {
             uint32_t concurrency = strtoul(para[concurrency_rp].data(), nullptr, 10);
             concurrency = concurrency > config.maxFuncConcurrency ? config.maxFuncConcurrency : concurrency;
             msg.set_concurrency(concurrency == 0 ? 1 : concurrency);
         }
-        if (para.size() > 4) {
+        if (para.size() > 5) {
             double core = strtod(para[core_rp].data(), nullptr);
             if (core > 0) {
                 core = core > getAllCores() ? getAllCores() : core;
@@ -98,14 +101,22 @@ namespace RFIT_NS::endpoint {
         return 0;
     }
 
+    enum InvokePara {
+        invoke_ip = 0,
+        user_ip,
+        functionName_ip,
+        InvokeParaSize
+    };
+
     int
     RFITEndpointHandler::requestToMsg(const Http::Request &request, Message &msg) {
         vector<string> para;
         utils::split(request.resource(), para, "/");
-        if (para.size() == 2 && para[0] != "invoke")
+        if (para.size() == InvokeParaSize && para[invoke_ip] != "invoke")
             return -1;
         msg.set_id(utils::generateGid());
-        msg.set_funcname(para[1]);
+        msg.set_user(para[user_ip]);
+        msg.set_funcname(para[functionName_ip]);
         msg.set_timestamp(RFIT_NS::utils::Clock::epochMillis());
         msg.set_inputdata(request.body());
         msg.set_isping(false);

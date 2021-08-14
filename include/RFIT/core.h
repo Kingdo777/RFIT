@@ -7,6 +7,7 @@
 
 #include <WAVM/Inline/HashMap.h>
 #include <WAVM/Runtime/Runtime.h>
+#include <wavm/WAVMWasmModule.h>
 #include <pistache/async.h>
 #include <pistache/http.h>
 #include <utils/locks.h>
@@ -14,6 +15,9 @@
 #include <utils/lru.h>
 #include <utils/gids.h>
 #include <utils/files.h>
+#include <utils/dl.h>
+#include <proto/rfit.pb.h>
+#include <wavm/WAVMWasmModule.h>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -22,8 +26,6 @@
 #include <list>
 #include <unordered_map>
 #include <thread>
-#include "proto/rfit.pb.h"
-#include "utils/dl.h"
 
 #define CPU_DEFAULT_SHARES 1024
 #define CPU_DEFAULT_CFS_QUOTA_US 100000
@@ -392,9 +394,31 @@ namespace RFIT_NS {
 
         F() = delete;
 
-        F(string funcName_,
+        F(string user_,
+          string funcName_,
           shared_ptr<R> r_,
           uint32_t concurrency = 1);
+
+        F(string user_,
+          string funcName_,
+          shared_ptr<R> r_,
+          utils::dlResult dr_,
+          uint32_t concurrency = 1
+        );
+
+        F(string user_,
+          string funcName_,
+          shared_ptr<R> r_,
+          const WAVM::Runtime::ModuleRef &module_,
+          uint32_t concurrency = 1);
+
+        static string makeFuncStr(const string &user, const string &funcName) {
+            return user + "-" + funcName;
+        }
+
+        string getFuncStr() {
+            return wasm.module.getFuncStr();
+        }
 
         [[nodiscard]] const string &getFuncName() const {
             return funcName;
@@ -436,8 +460,8 @@ namespace RFIT_NS {
             isWasm_ = false;
         }
 
-        void setWASM(WAVM::Runtime::ModuleRef module_) {
-            wasm.module = std::move(module_);
+        void setWASM(const WAVM::Runtime::ModuleRef &module_) {
+            wasm.module = wasm::WAVMWasmModule(user, funcName, module_);
             isWasm_ = true;
         }
 
@@ -456,12 +480,16 @@ namespace RFIT_NS {
         };
 
         string toString() {
-                return "F: {funcName:" + funcName + ", conc:" + to_string(concurrency) + ", dlPath:" +
-                       getPath() +
-                       "}";
+            return "F: {funcName:" + funcName + ", conc:" + to_string(concurrency) + ", dlPath:" +
+                   getPath() +
+                   "}";
         }
 
+        bool pingFunc();
+
     private:
+
+        string user;
 
         string funcName;
 
@@ -472,7 +500,7 @@ namespace RFIT_NS {
         } native;
 
         struct {
-            WAVM::Runtime::ModuleRef module;
+            wasm::WAVMWasmModule module;
         } wasm;
 
         shared_ptr<R> r;

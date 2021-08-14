@@ -66,31 +66,25 @@ namespace RFIT_NS {
         func->deferred.resolve();
     }
 
-    bool pingFunc(FuncType func) {
-        Message m{};
-        m.set_isping(true);
-        func(m);
-        return m.outputdata() == "PONG";
-    }
 
     void
     RFIT::registerF(FunctionRegisterMsg &msg, dlResult &dl, const boost::filesystem::path &p) {
-        if (!pingFunc((FuncType) dl.addr)) {
-            close_remove_DL(p, dl.handle);
-            msg.set_status(false);
-            msg.set_message("Ping Failed");
-        }
         CpuResource cr(CPU_DEFAULT_SHARES * (int(msg.coreration() * 10)),
                        (uint64_t) (msg.coreration() * CPU_DEFAULT_CFS_PERIOD_US),
                        CPU_DEFAULT_CFS_PERIOD_US);
         MemResource mr(msg.memsize(), msg.memsize());
         Resource resource(cr, mr);
         auto r = createR(resource);
-        auto f = make_shared<F>(msg.funcname(), r, msg.concurrency());
-        f->setDL(dl);
-        FMap.emplace(f->getFuncName(), f);
-        msg.set_status(true);
-        msg.set_message("OK");
+        auto f = make_shared<F>(msg.user(), msg.funcname(), r, dl, msg.concurrency());
+        if (!f->pingFunc()) {
+            close_remove_DL(p, dl.handle);
+            msg.set_status(false);
+            msg.set_message("Ping Failed");
+        } else {
+            FMap.emplace(f->getFuncStr(), f);
+            msg.set_status(true);
+            msg.set_message("OK");
+        }
     }
 
     void RFIT::handleNativeFuncRegister(const shared_ptr<FunctionRegisterEntry> &func) {
@@ -113,21 +107,21 @@ namespace RFIT_NS {
 
     void
     RFIT::registerF(FunctionRegisterMsg &msg, WAVM::Runtime::ModuleRef &module) {
-        if (false) {
-            msg.set_status(false);
-            msg.set_message("Ping Failed");
-        }
         CpuResource cr(CPU_DEFAULT_SHARES * (int(msg.coreration() * 10)),
                        (uint64_t) (msg.coreration() * CPU_DEFAULT_CFS_PERIOD_US),
                        CPU_DEFAULT_CFS_PERIOD_US);
         MemResource mr(msg.memsize(), msg.memsize());
         Resource resource(cr, mr);
         auto r = createR(resource);
-        auto f = make_shared<F>(msg.funcname(), r, msg.concurrency());
-        f->setWASM(module);
-        FMap.emplace(f->getFuncName(), f);
-        msg.set_status(true);
-        msg.set_message("OK");
+        auto f = make_shared<F>(msg.user(), msg.funcname(), r, module, msg.concurrency());
+        if (!f->pingFunc()) {
+            msg.set_status(false);
+            msg.set_message("Ping Failed");
+        } else {
+            FMap.emplace(f->getFuncStr(), f);
+            msg.set_status(true);
+            msg.set_message("OK");
+        }
     }
 
     /// 1、检查是wasm二进制文件
@@ -136,11 +130,15 @@ namespace RFIT_NS {
     /// 4、编译，并存储到执行路径： PRO_ROOT/Function/wasm/function/##name##/function.wasm.o
     /// 5、注册F
     void RFIT::handleWasmFuncRegister(const shared_ptr<FunctionRegisterEntry> &func) {
+        auto conf = systemConfig;
         //// 写入wasm文件
         const std::string &fileBody = func->msg.dldata();
         assert(!fileBody.empty());
         assert(utils::isWasm(fileBody));
-        auto wasmFile = PRO_ROOT"/Function/wasm/function/" + func->msg.funcname() + "/function.wasm";
+        auto wasmFile = boost::filesystem::path(conf.functionDir).
+                append(func->msg.user()).
+                append(func->msg.funcname()).
+                append("/function.wasm");
         writeStringToFile(wasmFile, fileBody);
 
         //// 生成Module，并将obj写入文件
@@ -153,7 +151,10 @@ namespace RFIT_NS {
         // Compile the module to object code
         WAVM::Runtime::ModuleRef module = WAVM::Runtime::compileModule(moduleIR);
         std::vector<uint8_t> objBytes = WAVM::Runtime::getObjectCode(module);
-        auto wasmObjFile = PRO_ROOT"/Function/wasm/object/" + func->msg.funcname() + "/function.wasm.o";
+        auto wasmObjFile = boost::filesystem::path(conf.objectFileDir).
+                append(func->msg.user()).
+                append(func->msg.funcname()).
+                append("function.wasm.o");
         writeBytesToFile(wasmObjFile, objBytes);
 
         //// 注册F
@@ -166,9 +167,10 @@ namespace RFIT_NS {
             shared_ptr<FunctionRegisterEntry> func = funcRegisterQueue.popSafe();
             if (!func)
                 break;
-            if (existF(func->msg.funcname())) {
+            const std::string &funcName = F::makeFuncStr(func->msg.user(), func->msg.funcname());
+            if (existF(funcName)) {
                 func->response.send(Pistache::Http::Code::Bad_Request,
-                                    "Register Failed:" + func->msg.funcname() + " is exist!");
+                                    "Register Failed:" + funcName + " is exist!");
                 func->deferred.resolve();
                 continue;
             }
@@ -203,7 +205,7 @@ namespace RFIT_NS {
         default_logger->info("handlerFuncInvoke" + utils::messageToJson(msg));
         return Pistache::Async::Promise<void>(
                 [&](Pistache::Async::Deferred<void> deferred) {
-                    const std::string &funcName = msg.funcname();
+                    const std::string &funcName = F::makeFuncStr(msg.user(), msg.funcname());
                     auto f = getF(funcName);
                     if (!f) {
                         response.send(Http::Code::Bad_Request, "No Function Found For " + funcName);
@@ -216,15 +218,15 @@ namespace RFIT_NS {
                 });
     }
 
-    shared_ptr<F> RFIT::getF(const string &funcName) {
-        auto it = FMap.find(funcName);
+    shared_ptr<F> RFIT::getF(const string &funcStr) {
+        auto it = FMap.find(funcStr);
         if (it == FMap.end())
             return nullptr;
         return it->second;
     }
 
-    bool RFIT::existF(const string &funcName) {
-        return FMap.find(funcName) != FMap.end();
+    bool RFIT::existF(const string &funcStr) {
+        return FMap.find(funcStr) != FMap.end();
     }
 
 

@@ -113,7 +113,7 @@ namespace RFIT_NS {
             if (e.what() != nullptr)
                 s = e.what();
             invokeEntry->response.send(Pistache::Http::Code::Bad_Request,
-                                       "Register Wrong: " + s);
+                                       "Invoke Wrong: " + s);
             invokeEntry->deferred.reject(s);
         }
         invokeEntry->response.send(Http::Code::Ok, invokeEntry->instance->msg.outputdata());

@@ -10,6 +10,7 @@ namespace RFIT_NS::utils {
     public:
         std::string logLevel;
         std::string logFile;
+        std::string captureStdout;
 
         uint32_t listenPort = 8080;
         uint32_t reactorThreadCount = 12;
@@ -22,6 +23,13 @@ namespace RFIT_NS::utils {
         uint32_t memAllocGranularity = 16;
 
         std::string entrySuffix = "_mainEntry";
+
+        // Filesystem storage
+        std::string functionDir;
+        std::string objectFileDir;
+        std::string runtimeFilesDir;
+        std::string sharedFilesDir;
+        std::string sharedFilesStorageDir;
 
         SystemConfig();
 

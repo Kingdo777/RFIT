@@ -24,5 +24,5 @@ endif ()
 
 set(LIB_FILES ${HEADERS} ${SRC_FILES})
 rfit_private_lib(RFIT "${LIB_FILES}")
-target_link_libraries(RFIT m pthread boost_filesystem  boost_system proto libWAVM)
+target_link_libraries(RFIT m pthread boost_filesystem  boost_system proto libWAVM wasm wavmmodule)
 

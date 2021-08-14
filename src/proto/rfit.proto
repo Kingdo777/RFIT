@@ -4,30 +4,35 @@ package RFIT_NS;
 
 message Message {
   uint32 id = 1;
+  string user = 2;
+  string funcName = 3;
+  string snapshotKey = 4;
+  int32 snapshotSize = 5;
+  string funcPtr = 6;
+  int32 returnValue = 7;
 
-  string funcName = 2;
+  uint64 timestamp = 8;
+  uint64 finishTimestamp = 9;
 
-  uint64 timestamp = 3;
-  uint64 finishTimestamp = 4;
+  bytes inputData = 10;
+  bytes outputData = 11;
 
-  bytes inputData = 5;
-  bytes outputData = 6;
-
-  bool isPing = 7;
+  bool isPing = 12;
 }
 
 message FunctionRegisterMsg{
-  string funcName = 1;
+  string user = 1;
+  string funcName = 2;
 
-  uint64 memSize = 2;
-  double coreRation = 3;
-  uint32 concurrency = 4;
+  uint64 memSize = 3;
+  double coreRation = 4;
+  uint32 concurrency = 5;
 
-  bytes dlData = 5;
+  bytes dlData = 6;
 
-  bytes type = 6;
+  bytes type = 7;
 
   // ResponseInfo
-  bool status = 7;
-  string message = 8;
+  bool status = 8;
+  string message = 9;
 }
