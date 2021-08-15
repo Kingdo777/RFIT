@@ -225,10 +225,13 @@ namespace RFIT_NS {
 
         const shared_ptr<F> &getF() const;
 
+        void invoke();
+
     private:
         Message msg;
         shared_ptr<R> r;
         shared_ptr<F> f;
+        wasm::WAVMWasmModule module;
     };
 
     //T的三种存在状态
@@ -438,6 +441,10 @@ namespace RFIT_NS {
 
         [[nodiscard]] bool isConcurrency() const {
             return concurrency > 1;
+        }
+
+        wasm::WAVMWasmModule &getModule() {
+            return wasm.module;
         }
 
         bool isWasm() const { return isWasm_; }

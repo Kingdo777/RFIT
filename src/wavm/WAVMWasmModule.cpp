@@ -91,7 +91,7 @@ namespace RFIT_NS::wasm {
         // If bound, we want to reclaim all the memory we've created _before_
         // cloning from the zygote otherwise it's lost forever
         if (_isBound) {
-            tearDown();
+//            tearDown();
         }
 
         baseSnapshotKey = other.baseSnapshotKey;
@@ -159,7 +159,7 @@ namespace RFIT_NS::wasm {
     }
 
     WAVMWasmModule::~WAVMWasmModule() {
-        tearDown();
+//        tearDown();
     }
 
     bool WAVMWasmModule::tearDown() {
@@ -835,13 +835,8 @@ namespace RFIT_NS::wasm {
 
             try {
                 Runtime::catchRuntimeExceptions(
-                        [this,
-                                &funcInstance,
-                                &funcType,
-                                &invokeArgs,
-                                &returnValue,
-                                &logger] {
-                            logger->debug("Invoking C/C++ function");
+                        [&, this] {
+                            logger->debug("Invoking C/C++ function : {}", msg.funcptr());
 
                             IR::UntaggedValue result;
 

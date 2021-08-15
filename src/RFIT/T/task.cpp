@@ -107,7 +107,11 @@ namespace RFIT_NS {
     /// 5、修改Icount
     void T::doExecute(const shared_ptr<InvokeEntry> &invokeEntry) {
         try {
-            invokeEntry->instance->f->invoke(invokeEntry->instance->msg);
+            if (invokeEntry->instance->f->isWasm()) {
+                invokeEntry->instance->invoke();
+            } else {
+                invokeEntry->instance->f->invoke(invokeEntry->instance->msg);
+            }
         } catch (exception &e) {
             string s;
             if (e.what() != nullptr)
