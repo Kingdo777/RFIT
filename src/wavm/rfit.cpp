@@ -91,8 +91,7 @@ namespace RFIT_NS::wasm {
                                    I32 bufferLen) {
         default_logger->debug(
                 "S - get_py_user - {} {}", bufferPtr, bufferLen);
-//        std::string value = getExecutingMsg()->pythonuser();
-        std::string value = "python";
+        std::string value = getExecutingMsg()->pythonuser();
         if (value.empty()) {
             throw std::runtime_error("Python user empty, cannot return");
         }
@@ -108,8 +107,7 @@ namespace RFIT_NS::wasm {
                                    I32 bufferLen) {
         default_logger->debug(
                 "S - get_py_func - {} {}", bufferPtr, bufferLen);
-//        std::string value = getExecutingMsg()->pythonfunction();
-        std::string value = "hello";
+        std::string value = getExecutingMsg()->pythonfuncname();
         _readPythonInput(bufferPtr, bufferLen, value);
     }
 
@@ -121,8 +119,7 @@ namespace RFIT_NS::wasm {
                                    I32 bufferLen) {
         default_logger->debug(
                 "S - get_py_entry - {} {}", bufferPtr, bufferLen);
-//        std::string value = getExecutingMsg()->pythonentry();
-        std::string value = "entry";
+        std::string value = getExecutingMsg()->pythonentry();
         _readPythonInput(bufferPtr, bufferLen, value);
     }
 
@@ -175,38 +172,5 @@ namespace RFIT_NS::wasm {
         printf("-------------------------------\n");
 
         fflush(stdout);
-    }
-
-// 02/12/20 - unfortunately some old Python wasm still needs this
-// Emulator API, should not be called from wasm but needs to be present for
-// linking
-    WAVM_DEFINE_INTRINSIC_FUNCTION(env,
-                                   "setEmulatedMessageFromJson",
-                                   I32,
-                                   setEmulatedMessageFromJson,
-                                   I32 msgPtr) {
-        default_logger->debug("S - setEmulatedMessageFromJson - {}",
-                              msgPtr);
-        throw std::runtime_error(
-                "Should not be calling emulator functions from wasm");
-    }
-
-    WAVM_DEFINE_INTRINSIC_FUNCTION(env,
-                                   "emulatorGetAsyncResponse",
-                                   I32,
-                                   emulatorGetAsyncResponse) {
-        default_logger->debug("S - emulatorGetAsyncResponse");
-        throw std::runtime_error(
-                "Should not be calling emulator functions from wasm");
-    }
-
-    WAVM_DEFINE_INTRINSIC_FUNCTION(env,
-                                   "emulatorSetCallStatus",
-                                   void,
-                                   emulatorSetCallStatus,
-                                   I32 success) {
-        default_logger->debug("S - emulatorSetCallStatus {}", success);
-        throw std::runtime_error(
-                "Should not be calling emulator functions from wasm");
     }
 }

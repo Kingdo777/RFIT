@@ -34,7 +34,7 @@ namespace RFIT_NS::endpoint {
         } else {
             response.send(Http::Code::Bad_Request).then(
                     [](ssize_t bytes) { std::cout << bytes << " bytes have been sent\n"; },
-                    Async::NoExcept
+                    PrintException()
             );
         }
     }
@@ -73,7 +73,11 @@ namespace RFIT_NS::endpoint {
             return -1;
         msg.set_type(para[type_rp]);
         msg.set_user(para[user_rp]);
-        msg.set_funcname(std::move(para[functionName_rp]));
+        if (msg.user() == "python") {
+            msg.set_funcname("py_func");
+        } else {
+            msg.set_funcname(std::move(para[functionName_rp]));
+        }
         msg.set_concurrency(1);
         msg.set_coreration(DEFAULT_CPU_RATE);
         msg.set_memsize(MEM_DEFAULT_HARD_LIMIT);
@@ -116,7 +120,15 @@ namespace RFIT_NS::endpoint {
             return -1;
         msg.set_id(utils::generateGid());
         msg.set_user(para[user_ip]);
-        msg.set_funcname(para[functionName_ip]);
+        if (msg.user() == "python") {
+            msg.set_funcname("py_func");
+            msg.set_pythonuser("python");
+            msg.set_pythonfuncname(std::move(para[functionName_ip]));
+            msg.set_ispython(true);
+        } else {
+            msg.set_funcname(std::move(para[functionName_ip]));
+            msg.set_ispython(false);
+        }
         msg.set_timestamp(RFIT_NS::utils::Clock::epochMillis());
         msg.set_inputdata(request.body());
         msg.set_isping(false);

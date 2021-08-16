@@ -5,6 +5,8 @@
 #include <WAVM/WASM/WASM.h>
 #include "RFIT/RFIT.h"
 
+#define MAX_TABLE_SIZE 500000
+
 namespace RFIT_NS {
 
     RFIT::RFIT() :
@@ -148,14 +150,26 @@ namespace RFIT_NS {
         if (!WAVM::WASM::loadBinaryModule(reinterpret_cast<const WAVM::U8 *>(fileBody.data()), fileBody.size(),
                                           moduleIR, &loadError))
             throw std::runtime_error("Failed to parse wasm binary");
-        // Compile the module to object code
-        WAVM::Runtime::ModuleRef module = WAVM::Runtime::compileModule(moduleIR);
-        std::vector<uint8_t> objBytes = WAVM::Runtime::getObjectCode(module);
         auto wasmObjFile = boost::filesystem::path(conf.objectFileDir).
                 append(func->msg.user()).
                 append(func->msg.funcname()).
                 append("function.wasm.o");
+        // Compile the module to object code
+        WAVM::Runtime::ModuleRef module;
+        std::vector<uint8_t> newHash = hashBytes(fileBody.data(), fileBody.size());
+        std::vector<uint8_t> oldHash = readFileToBytes(wasmObjFile.parent_path().append("function.wasm.o.md5"));
+        if (newHash != oldHash) {
+            module = WAVM::Runtime::compileModule(moduleIR);
+            writeBytesToFile(wasmObjFile.parent_path().append("function.wasm.o.md5"), newHash);
+        } else {
+            auto objectCode = readFileToBytes(wasmObjFile);
+            module = std::make_shared<WAVM::Runtime::Module>(WAVM::IR::Module(moduleIR), std::move(objectCode));
+        }
+        std::vector<uint8_t> objBytes = WAVM::Runtime::getObjectCode(module);
         writeBytesToFile(wasmObjFile, objBytes);
+        /// 修改table的最大值，这样在dl时，可以扩展table
+        // Force maximum size
+        module->ir.tables.defs[0].type.size.max = (WAVM::U64) MAX_TABLE_SIZE;
 
         //// 注册F
         registerF(func->msg, module);

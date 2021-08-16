@@ -6,6 +6,7 @@ namespace RFIT_NS::utils {
         d.SetObject();
         Document::AllocatorType &a = d.GetAllocator();
         d.AddMember("type", Value(msg.type().c_str(), msg.type().size(), a).Move(), a);
+        d.AddMember("user", Value(msg.user().c_str(), msg.user().size(), a).Move(), a);
         d.AddMember("funcName", Value(msg.funcname().c_str(), msg.funcname().size(), a).Move(), a);
         d.AddMember("memSize", msg.memsize(), a);
         d.AddMember("coreRation", msg.coreration(), a);
@@ -28,7 +29,12 @@ namespace RFIT_NS::utils {
         // Need to be explicit with strings here to make a copy _and_ make sure we
         // specify the length to include any null-terminators from bytes
         d.AddMember("id", msg.id(), a);
+        d.AddMember("user", Value(msg.user().c_str(), msg.user().size(), a).Move(), a);
         d.AddMember("funcName", Value(msg.funcname().c_str(), msg.funcname().size(), a).Move(), a);
+        if(msg.ispython()){
+            d.AddMember("python_user", Value(msg.pythonuser().c_str(), msg.pythonuser().size(), a).Move(), a);
+            d.AddMember("python_funcName", Value(msg.pythonfuncname().c_str(), msg.pythonfuncname().size(), a).Move(), a);
+        }
         d.AddMember("timestamp", msg.timestamp(), a);
         d.AddMember("finishTimestamp", msg.finishtimestamp(), a);
         if (!msg.inputdata().empty()) {

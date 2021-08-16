@@ -128,6 +128,9 @@ namespace RFIT_NS::wasm {
             moduleInstance =
                     Runtime::remapToClonedCompartment(other.moduleInstance, compartment);
 
+            // mainModule是只读的
+            mainModule = other.mainModule;
+
             // Extract the memory and table again
             defaultMemory = Runtime::getDefaultMemory(moduleInstance);
             defaultTable = Runtime::getDefaultTable(moduleInstance);
@@ -836,7 +839,7 @@ namespace RFIT_NS::wasm {
             try {
                 Runtime::catchRuntimeExceptions(
                         [&, this] {
-                            logger->debug("Invoking C/C++ function : {}", msg.funcptr());
+                            logger->debug("Invoking C/C++ function : {}", msg.isping() ? msg.funcptr() : getFuncStr());
 
                             IR::UntaggedValue result;
 

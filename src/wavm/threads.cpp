@@ -14,6 +14,42 @@ using namespace WAVM;
 
 namespace RFIT_NS::wasm {
 // ----------------------------------------------
+// pthread
+// ----------------------------------------------
+    WAVM_DEFINE_INTRINSIC_FUNCTION(env,
+                                   "pthread_create",
+                                   I32,
+                                   pthread_create,
+                                   I32 pthreadPtr,
+                                   I32 attrPtr,
+                                   I32 entryFunc,
+                                   I32 argsPtr) {
+        default_logger->debug("S - pthread_create - {} {} {} {}",
+                      pthreadPtr,
+                      attrPtr,
+                      entryFunc,
+                      argsPtr);
+        return 0;
+    }
+
+    WAVM_DEFINE_INTRINSIC_FUNCTION(env,
+                                   "pthread_join",
+                                   I32,
+                                   pthread_join,
+                                   I32 pthreadPtr,
+                                   I32 resPtrPtr) {
+        default_logger->debug("S - pthread_join - {} {}", pthreadPtr, resPtrPtr);
+        return 0;
+    }
+
+    WAVM_DEFINE_INTRINSIC_FUNCTION(env,
+                                   "pthread_exit",
+                                   void,
+                                   pthread_exit,
+                                   I32 code) {
+        default_logger->debug("S - pthread_exit - {}", code);
+    }
+// ----------------------------------------------
 // FUTEX
 // ----------------------------------------------
 

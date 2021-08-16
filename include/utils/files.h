@@ -7,9 +7,9 @@
 #include <vector>
 
 namespace RFIT_NS::utils {
-    std::string readFileToString(const std::string &path);
+    std::string readFileToString(const boost::filesystem::path &path);
 
-    std::vector<uint8_t> readFileToBytes(const std::string &path);
+    std::vector<uint8_t> readFileToBytes(const boost::filesystem::path &path);
 
     void writeBytesToFile(const boost::filesystem::path &path,
                           const std::vector<uint8_t> &data);
@@ -17,7 +17,7 @@ namespace RFIT_NS::utils {
     void writeStringToFile(const boost::filesystem::path &path,
                            const std::string &data);
 
-    std::vector<uint8_t> hashBytes(const std::vector<uint8_t> &bytes);
+    std::vector<uint8_t> hashBytes(const char *data, size_t size);
 
     bool isWasm(const std::vector<uint8_t> &bytes);
 

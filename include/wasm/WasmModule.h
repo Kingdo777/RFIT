@@ -33,8 +33,8 @@
 #define GUARD_REGION_SIZE (10 * WASM_BYTES_PER_PAGE)
 
 // Special known function names
-// Zygote function (must match faasm.h linked into the functions themselves)
-#define ZYGOTE_FUNC_NAME "_faasm_zygote"
+// Zygote function (must match rfit.h linked into the functions themselves)
+#define ZYGOTE_FUNC_NAME "_rfit_zygote"
 #define WASM_CTORS_FUNC_NAME "__wasm_call_ctors"
 #define ENTRY_FUNC_NAME "_start"
 

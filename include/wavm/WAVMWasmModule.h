@@ -58,7 +58,7 @@ namespace RFIT_NS::wasm {
 
         void bindToFunctionNoZygote() override;
 
-        bool execute(RFIT_NS::Message& msg) override;
+        bool execute(RFIT_NS::Message &msg) override;
 
         bool isBound() override;
 

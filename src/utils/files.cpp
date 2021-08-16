@@ -8,8 +8,9 @@
 #include <string>
 
 namespace RFIT_NS::utils {
-    std::string readFileToString(const std::string &path) {
-        assert(boost::filesystem::exists(path));
+    std::string readFileToString(const boost::filesystem::path &path) {
+        if (!boost::filesystem::exists(path))
+            return "";
 
         std::ifstream stream(path);
         std::stringstream buffer;
@@ -18,10 +19,11 @@ namespace RFIT_NS::utils {
         return buffer.str();
     }
 
-    std::vector<uint8_t> readFileToBytes(const std::string &path) {
-        assert(boost::filesystem::exists(path));
-        std::ifstream file(path, std::ios::binary);
+    std::vector<uint8_t> readFileToBytes(const boost::filesystem::path &path) {
+        if (!boost::filesystem::exists(path))
+            return {};
 
+        std::ifstream file(path, std::ios::binary);
         // Stop eating new lines in binary mode
         file.unsetf(std::ios::skipws);
 
@@ -82,10 +84,10 @@ namespace RFIT_NS::utils {
         }
     }
 
-    std::vector<uint8_t> hashBytes(const std::vector<uint8_t> &bytes) {
+    std::vector<uint8_t> hashBytes(const char *data, size_t size) {
         std::vector<uint8_t> result(MD5_DIGEST_LENGTH);
-        MD5(reinterpret_cast<const unsigned char *>(bytes.data()),
-            bytes.size(),
+        MD5(reinterpret_cast<const unsigned char *>(data),
+            size,
             result.data());
 
         return result;

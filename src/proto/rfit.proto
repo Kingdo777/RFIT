@@ -18,6 +18,11 @@ message Message {
   bytes outputData = 11;
 
   bool isPing = 12;
+
+  bool isPython = 13;
+  string pythonFuncName = 14;
+  string pythonUser = 15;
+  string pythonEntry = 16;
 }
 
 message FunctionRegisterMsg{

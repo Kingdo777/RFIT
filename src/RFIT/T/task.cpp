@@ -112,16 +112,16 @@ namespace RFIT_NS {
             } else {
                 invokeEntry->instance->f->invoke(invokeEntry->instance->msg);
             }
+            invokeEntry->response.send(Http::Code::Ok, invokeEntry->instance->msg.outputdata());
+            invokeEntry->deferred.resolve();
         } catch (exception &e) {
             string s;
             if (e.what() != nullptr)
                 s = e.what();
             invokeEntry->response.send(Pistache::Http::Code::Bad_Request,
                                        "Invoke Wrong: " + s);
-            invokeEntry->deferred.reject(s);
+            invokeEntry->deferred.reject(e);
         }
-        invokeEntry->response.send(Http::Code::Ok, invokeEntry->instance->msg.outputdata());
-        invokeEntry->deferred.resolve();
         doClean();
         doLog(invokeEntry);
         doChangeICount();
