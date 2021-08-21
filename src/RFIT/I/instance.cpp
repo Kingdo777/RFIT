@@ -7,6 +7,7 @@
 
 namespace RFIT_NS {
     I::I(Message msg_, shared_ptr<R> r_, shared_ptr<F> f_) :
+            id(utils::generateGid()),
             msg(std::move(msg_)),
             r(std::move(r_)),
             f(std::move(f_)) {
@@ -25,7 +26,7 @@ namespace RFIT_NS {
         return f;
     }
 
-    void I::invoke() {
+    bool I::invoke() {
         assert(f->isWasm());
         bool success;
         success = module.execute(msg);
@@ -36,5 +37,6 @@ namespace RFIT_NS {
         if (!msg.outputdata().empty()) {
             default_logger->info("Output: {}", msg.outputdata());
         }
+        return success;
     }
 }

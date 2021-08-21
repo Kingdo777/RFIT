@@ -79,7 +79,7 @@ def register(ctx, func, concurrency, core=0, mem=0):
 
 @task()
 def invoke(ctx, func):
-    url = "http://localhost:8080/invoke/{}".format(func)
+    url = "http://localhost:8080/invoke/kingdo/{}".format(func)
     data = {
         "name": "Kingdo"
     }

@@ -225,9 +225,10 @@ namespace RFIT_NS {
 
         const shared_ptr<F> &getF() const;
 
-        void invoke();
+        bool invoke();
 
     private:
+        uint64_t id;
         Message msg;
         shared_ptr<R> r;
         shared_ptr<F> f;
@@ -274,15 +275,6 @@ namespace RFIT_NS {
             std::thread::id tid;
         };
 
-    public:
-        T();
-
-        void run();
-
-        void shutdown();
-
-        [[nodiscard]] uint64_t getID() const { return id; }
-
         struct InvokeEntry {
             InvokeEntry(Pistache::Async::Deferred<void> deferred_,
                         shared_ptr<I> instance_,
@@ -296,12 +288,113 @@ namespace RFIT_NS {
             Pistache::Http::ResponseWriter response;
         };
 
+        enum InvokeStatus {
+            success,
+            faild,
+            wrong
+        };
+
+        struct workerInvokeDoneEntry {
+            workerInvokeDoneEntry(uint64_t id_, InvokeStatus status_, string msg_) :
+                    id(id_), status(status_), msg(std::move(msg_)) {};
+            uint64_t id;
+            InvokeStatus status;
+            string msg;
+        };
+
+        struct WorkerPool;
+        struct Worker;
+
+        struct Worker {
+            explicit Worker(WorkerPool *wp_);
+
+            uint64_t getID() { return id; }
+
+            void shutdown() {
+                shutdownFd.notify();
+                worker.join();
+            }
+
+            void push(shared_ptr<I> i) { IQueue.push(std::move(i)); }
+
+            void setSelf(shared_ptr<Worker> self_) { self = std::move(self_); }
+
+            void kill() {
+                // TODO
+                assert(false);
+                // worker.join();
+            }
+
+        private:
+            uint64_t id = utils::generateGid();
+            WorkerPool *wp;
+            shared_ptr<Worker> self;
+            Pistache::Polling::Epoll poller;
+            // 理论上来说，一个worker只能处理一个I
+            Pistache::PollableQueue<shared_ptr<I>> IQueue;
+            Pistache::NotifyFd shutdownFd;
+            std::thread worker;
+
+            void handleIQueue();
+
+            void run();
+        };
+
+        struct WorkerPool {
+            WorkerPool(uint poolSize,
+                       shared_ptr<PollableQueue<workerInvokeDoneEntry>> doneQueue_) :
+                    size(poolSize),
+                    doneQueue(std::move(doneQueue_)) {
+            }
+
+            void invoke(const shared_ptr<I> &instance);
+
+            void invokeDone(const shared_ptr<Worker> &worker, const workerInvokeDoneEntry &entry);
+
+            void resize(uint newSize);
+
+            void shutdown();
+
+            uint getSize() const { return size; }
+
+            size_t getIdleWorkersCount() { return idleWorkers.size(); }
+
+            size_t getBusyWorkersCount() { return busyWorkers.size(); }
+
+            shared_ptr<PollableQueue<workerInvokeDoneEntry>> getDoneQueue() {
+                return doneQueue;
+            }
+
+        private:
+            uint size;
+            shared_ptr<PollableQueue<workerInvokeDoneEntry>> doneQueue;
+            std::queue<shared_ptr<Worker>> idleWorkers;
+            std::unordered_map<uint64_t, shared_ptr<Worker>> busyWorkers;
+            std::mutex mutex;
+        };
+
+    public:
+        T();
+
+        void run();
+
+        void shutdown();
+
+        [[nodiscard]] uint64_t getID() const { return id; }
+
         string toString() {
             return "T: {id:" + to_string(id) +
                    ", context:" + context.toString() +
+                   ", status:" +
+                   ((ICount == wp.getBusyWorkersCount() &&
+                     wp.getBusyWorkersCount() + wp.getIdleWorkersCount() <= wp.getSize())
+                    ? string("Good!") : string("BAD!")) +
                    ", ICount:" + to_string(ICount) +
                    ", workCount:" + to_string(workCount) +
                    ", dispatchCount:" + to_string(dispatchCount) +
+                   ", workerPoolSize:" + to_string(wp.getSize()) +
+                   ", idleWorkerCount:" + to_string(wp.getIdleWorkersCount()) +
+                   ", busyWorkerCount:" + to_string(wp.getBusyWorkersCount()) +
                    "}";
         }
 
@@ -328,10 +421,17 @@ namespace RFIT_NS {
         thread t;
 
         CGroup cg;
+
+        shared_ptr<PollableQueue<workerInvokeDoneEntry>> invokeDoneMsgQueue;
+        std::unordered_map<uint64_t, shared_ptr<InvokeEntry>> invokeEntryMap;
+
+        WorkerPool wp;
     private:
         void handleFds(const std::vector<Polling::Event> &events);
 
         void handleIQueue();
+
+        void handleInvokeDoneMsgQueue();
 
         bool checkI(const shared_ptr<I> &instance);
 
@@ -341,7 +441,7 @@ namespace RFIT_NS {
 
         void doExecute(const shared_ptr<InvokeEntry> &invokeEntry);
 
-        void doClean();
+        void doExecuteWasm(const shared_ptr<InvokeEntry> &invokeEntry);
 
         void doLog(const shared_ptr<InvokeEntry> &invokeEntry);
 
@@ -420,7 +520,10 @@ namespace RFIT_NS {
         }
 
         string getFuncStr() {
-            return wasm.module.getFuncStr();
+            if (isWasm())
+                return wasm.module.getFuncStr();
+            else
+                return user + "-" + funcName;
         }
 
         [[nodiscard]] const string &getFuncName() const {

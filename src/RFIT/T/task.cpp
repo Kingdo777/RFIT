@@ -12,6 +12,8 @@ namespace RFIT_NS {
                 return;
             if (e.tag == IQueue.tag()) {
                 handleIQueue();
+            } else if (e.tag == invokeDoneMsgQueue->tag()) {
+                handleInvokeDoneMsgQueue();
             }
         }
     }
@@ -37,8 +39,11 @@ namespace RFIT_NS {
              IQueue(),
              shutdown_(false),
              shutdownFd(),
-             cg() {
+             cg(),
+             invokeDoneMsgQueue(make_shared<PollableQueue<workerInvokeDoneEntry>>()),
+             wp(0, invokeDoneMsgQueue) {
         IQueue.bind(poller);
+        invokeDoneMsgQueue->bind(poller);
         shutdownFd.bind(poller);
         t = thread([this] {
             context.set();
@@ -52,6 +57,7 @@ namespace RFIT_NS {
     void T::shutdown() {
         shutdown_.store(true);
         shutdownFd.notify();
+        wp.shutdown();
         t.join();
         cg.destroy();
     }
@@ -66,7 +72,40 @@ namespace RFIT_NS {
             //// 如果不是异步执行，那么ICount是没有任何意义的变量 TODO
             ICount++;
             workCount++;
-            doExecute(invokeEntry);
+            if (invokeEntry->instance->f->isWasm()) {
+                doExecuteWasm(invokeEntry);
+            } else {
+                doExecute(invokeEntry);
+            }
+        }
+    }
+
+    void T::handleInvokeDoneMsgQueue() {
+        for (;;) {
+            auto info = invokeDoneMsgQueue->popSafe();
+            if (!info)
+                break;
+            assert(invokeEntryMap.find(info->id) != invokeEntryMap.end());
+            auto invokeEntry = invokeEntryMap[info->id];
+            invokeEntryMap.erase(info->id);
+            switch (info->status) {
+                case InvokeStatus::success:
+                    invokeEntry->response.send(Http::Code::Ok, invokeEntry->instance->msg.outputdata());
+                    invokeEntry->deferred.resolve();
+                    break;
+                case InvokeStatus::faild:
+                    invokeEntry->response.send(Http::Code::Bad_Request, info->msg);
+                    invokeEntry->deferred.resolve();
+                    break;
+                case InvokeStatus::wrong:
+                    invokeEntry->response.send(Http::Code::Bad_Request, info->msg);
+                    invokeEntry->deferred.reject(runtime_error(info->msg));
+                    break;
+                default:
+                    assert(false);
+            }
+            doLog(invokeEntry);
+            doChangeICount();
         }
     }
 
@@ -76,6 +115,7 @@ namespace RFIT_NS {
             (currentResource && currentResource->getHash() == instance->r->getHash()))
             return true;
         currentResource = instance->r;
+        wp.resize(instance->f->concurrency);
         return changeCgroup();
     }
 
@@ -107,11 +147,7 @@ namespace RFIT_NS {
     /// 5、修改Icount
     void T::doExecute(const shared_ptr<InvokeEntry> &invokeEntry) {
         try {
-            if (invokeEntry->instance->f->isWasm()) {
-                invokeEntry->instance->invoke();
-            } else {
-                invokeEntry->instance->f->invoke(invokeEntry->instance->msg);
-            }
+            invokeEntry->instance->f->invoke(invokeEntry->instance->msg);
             invokeEntry->response.send(Http::Code::Ok, invokeEntry->instance->msg.outputdata());
             invokeEntry->deferred.resolve();
         } catch (exception &e) {
@@ -122,14 +158,13 @@ namespace RFIT_NS {
                                        "Invoke Wrong: " + s);
             invokeEntry->deferred.reject(e);
         }
-        doClean();
         doLog(invokeEntry);
         doChangeICount();
     }
 
-
-    void T::doClean() {
-        // TODO
+    void T::doExecuteWasm(const shared_ptr<InvokeEntry> &invokeEntry) {
+        invokeEntryMap[invokeEntry->instance->id] = invokeEntry;
+        wp.invoke(invokeEntry->instance);
     }
 
     void T::doLog(const shared_ptr<InvokeEntry> &invokeEntry) {

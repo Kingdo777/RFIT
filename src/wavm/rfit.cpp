@@ -132,10 +132,8 @@ namespace RFIT_NS::wasm {
         const std::string key = getStringFromWasm(keyPtr);
         logger->debug("S - conf_flag - {}", key);
 
-        RFIT_NS::utils::SystemConfig &conf = RFIT_NS::utils::getSystemConfig();
-
         if (key == "PYTHON_PRELOAD") {
-//            int res = conf.pythonPreload == "on" ? 1 : 0;
+            // int res = systemConfig.pythonPreload == "on" ? 1 : 0;
             int res = 0;
             return res;
         } else if (key == "ALWAYS_ON") {
